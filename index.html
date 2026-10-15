@@ -262,9 +262,43 @@ async function resolveTicket(turl){
   }
   throw new Error('no-ticket');
 }
+async function resolveO37Watch(pageUrl){
+  const m=pageUrl.match(/\/watch\/(movies|series)\/(\d+)/);
+  if(!m)throw new Error('no-o37');
+  const links=JSON.parse(await pGet('https://037hddd.com/api/watch-links/'+m[1]+'/'+m[2]));
+  if(!Array.isArray(links)||!links.length)throw new Error('no-o37');
+  const sorted=[...links].sort((a,b)=>((a.link_type==='dub')?0:1)-((b.link_type==='dub')?0:1));
+  for(const L of sorted){
+    try{
+      const ehtml=await pGet(L.embed_url);
+      const origin=new URL(L.embed_url).origin;
+      const sm=ehtml.match(/sessionUrl:\s*"([^"]+)"|data-session-url="([^"]+)"/);
+      const pm=ehtml.match(/playbackUrl:\s*"([^"]+)"|data-playback-url="([^"]+)"/);
+      if(!sm||!pm)continue;
+      const sess=JSON.parse(await pGet(origin+(sm[1]||sm[2])));
+      const gate=sess?.ad_gate?.gate_token;
+      const srcs=sess?.sources||[];
+      if(!gate||!srcs.length)continue;
+      for(const sc of srcs){
+        try{
+          const pb=await pPost(origin+(pm[1]||pm[2]),
+            JSON.stringify({source_id:sc.id,gate_token:gate}),{'Content-Type':'application/json'});
+          if(!pb?.embed_url)continue;
+          const surl=pb.embed_url.startsWith('http')?pb.embed_url:origin+pb.embed_url;
+          const shtml=await pGet(surl);
+          const mu=shtml.match(/"(\/sources\/[^"]+?master\.m3u8\?[^"]+)"/)
+            ||shtml.match(/(https?:\/\/[^"'\\\s]+\.m3u8[^"'\\\s]*)/);
+          if(mu)return{src:mu[1].startsWith('http')?mu[1]:new URL(surl).origin+mu[1],label:(sess.title||'')+' '+(sc.label||'')};
+        }catch(e){}
+      }
+    }catch(e){}
+  }
+  throw new Error('no-o37');
+}
 async function resolveUrl(pageUrl){
   if(/\.(m3u8|mp4)(\?|$)/.test(pageUrl))return{src:pageUrl};
   if(/youtube|youtu\.be/.test(pageUrl)){const id=ytId(pageUrl);if(id)return{yt:id};}
+  if(/037hddd\.com\/watch\//.test(pageUrl)){try{return await resolveO37Watch(pageUrl);}catch(e){if(e.message!=='no-o37')throw e;}}
   if(pageUrl.includes('streamhls_ticket=1')){try{return await resolveTicket(pageUrl);}catch(e){if(e.message!=='no-ticket')throw e;}}
   if(/\/player\/source\/v1\./.test(pageUrl)){
     const ehtml=await pGet(pageUrl);
