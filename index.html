@@ -144,6 +144,10 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 <button onclick="resolve()">ดูแบบคลีน</button>
 </div>
 <video id="v" controls playsinline></video>
+<div class="row" id="qrow" style="display:none">
+<span class="note" id="playmode"></span>
+<select id="qsel" style="width:auto"></select>
+</div>
 <iframe id="yt" style="display:none;width:100%;height:70vh;border:0" allowfullscreen allow="autoplay; encrypted-media"></iframe>
 <div class="nowbar" id="nowbar" style="display:none">
 <button id="prevbtn" onclick="stepEp(-1)">◀ ตอนก่อน</button><b id="nowtxt">-</b><button id="nextbtn" onclick="stepEp(1)">ตอนถัดไป ▶</button>
@@ -187,14 +191,44 @@ async function pPost(url,body,headers,ref){
   }
 }
 function hostOf(url){try{return new URL(url).hostname.replace(/^www\./,'')}catch(e){return''}}
+function setMode(t){document.getElementById('qrow').style.display='flex';document.getElementById('playmode').textContent=t;}
+function buildQSel(h,levels,cur){
+  const sel=document.getElementById('qsel');sel.innerHTML='';
+  const auto=document.createElement('option');auto.value='-1';auto.textContent='Auto';
+  sel.appendChild(auto);
+  levels.forEach((l,i)=>{const o=document.createElement('option');o.value=String(i);
+    o.textContent=(l.height?l.height+'p':(Math.round((l.bitrate||0)/1000)+'k'));
+    if(i===cur)o.selected=true;sel.appendChild(o);});
+  sel.onchange=()=>{h.currentLevel=+sel.value;};
+}
+function proxied(src,ref){return '/api/hls?url='+encodeURIComponent(src)+(ref?('&ref='+encodeURIComponent(ref)):'');}
 function play(src,ref){
   document.getElementById('yt').style.display='none';const v=document.getElementById('v');v.style.display='block';
   if(window._hls){try{window._hls.destroy()}catch(e){}window._hls=null}
   v.pause();v.removeAttribute('src');v.load();
+  document.getElementById('qsel').innerHTML='';
   if(src.includes('.m3u8')&&window.Hls&&Hls.isSupported()){const h=new Hls();window._hls=h;
-    h.loadSource('/api/hls?url='+encodeURIComponent(src)+(ref?('&ref='+encodeURIComponent(ref)):''));
+    h.on(Hls.Events.ERROR,(ev,data)=>{
+      if(data.fatal&&data.type==='networkError'&&!h._viaProxy){
+        h._viaProxy=true;setMode('▶ ผ่าน server (เปลืองโควต้า)');
+        h.loadSource(proxied(src,ref));
+      }
+    });
+    h.on(Hls.Events.MANIFEST_PARSED,(ev,data)=>{
+      const lv=data.levels||[];let pick=0;
+      lv.forEach((l,i)=>{if(l.height&&l.height<=720)pick=i;});
+      if(lv.length&&!lv[0].height)pick=lv.length>1?1:0;
+      try{h.currentLevel=pick;}catch(e){}
+      buildQSel(h,lv,pick);
+    });
+    setMode('▶ ตรง (ไม่เปลืองโควต้า)');
+    h.loadSource(src);
     h.attachMedia(v);v.play().catch(()=>{});}
-  else{v.src=src;v.play().catch(()=>{});}
+  else if(src.includes('.m3u8')){
+    v._viaProxy=false;setMode('▶ ตรง (ไม่เปลืองโควต้า)');
+    v.onerror=()=>{if(!v._viaProxy){v._viaProxy=true;setMode('▶ ผ่าน server (เปลืองโควต้า)');v.src=proxied(src,ref);v.play().catch(()=>{});}};
+    v.src=src;v.play().catch(()=>{});}
+  else{document.getElementById('qrow').style.display='none';v.src=src;v.play().catch(()=>{});}
 }
 function playYT(id){document.getElementById('v').style.display='none';const f=document.getElementById('yt');f.style.display='block';f.src='https://www.youtube.com/embed/'+id+'?autoplay=1&rel=0';}
 function ytId(url){const m=url.match(/[?&]v=([\w-]{6,})/)||url.match(/youtu\.be\/([\w-]{6,})/)||url.match(/\/embed\/([\w-]{6,})/);return m?m[1]:null;}
