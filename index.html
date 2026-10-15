@@ -48,6 +48,7 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 <button onclick="platform('HBO')">🎬 HBO</button>
 </div>
 <div class="srcs"><span class="note">แหล่งเบื้องหลัง:</span><span class="src">anime-hit</span><span class="src">037HD</span><span class="src">AnimePahe</span><span class="src">YouTube</span><span class="src">+ทั่วเน็ต</span></div>
+<div class="row"><button class="ghost" onclick="selfTest()">🔧 ทดสอบระบบ</button><span class="note" id="selftest"></span></div>
 <div class="keyrow">🔑 Exa key (มีค่า default สำหรับครอบครัว — ใส่ทับได้): <input type="password" id="exakey" placeholder="วาง key แล้ว Enter"> <span id="keystat"></span></div>
 </div>
 <div id="results" class="grid"></div>
@@ -392,4 +393,14 @@ document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')s
 document.getElementById('u').addEventListener('keydown',e=>{if(e.key==='Enter')resolve()});
 function manualGo(){const v=document.getElementById('manual').value.trim();if(!v)return;document.getElementById('u').value=v;setNow(v,-1);resolve();document.getElementById('v').scrollIntoView();}
 document.getElementById('manual').addEventListener('keydown',e=>{if(e.key==='Enter')manualGo()});
+async function selfTest(){
+  const o=document.getElementById('selftest');o.textContent='⏳ กำลังเทส...';
+  const R=[];
+  for(const px of PROXIES){
+    try{const r=await fetch(px.p+(px.e?'https%3A%2F%2Fexample.com':'https://example.com'));R.push(px.p.slice(8,22)+':'+r.status);}catch(e){R.push(px.p.slice(8,22)+':ตาย');}
+  }
+  let ah='?';try{await pGet(BASE+'/?s=test');ah='anime-hit:OK';}catch(e){ah='anime-hit:'+e.message.slice(0,40);}
+  let ex='?';try{const j=await pPost('https://api.exa.ai/search',JSON.stringify({query:'test',numResults:1}),{'Content-Type':'application/json','x-api-key':exaKey()});ex='Exa:OK('+(j.results||[]).length+')';}catch(e){ex='Exa:'+e.message.slice(0,40);}
+  o.textContent=R.join(' | ')+' || '+ah+' || '+ex;
+}
 </script></body></html>
