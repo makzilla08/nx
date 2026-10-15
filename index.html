@@ -94,7 +94,7 @@ const EXA_BUILTIN='68183d99-ae4b-443f-865c-69023b33d2b7';
 const exaKey=()=>(localStorage.getItem('exa_key')||'').trim()||EXA_BUILTIN;
 if(localStorage.getItem('exa_key')){document.getElementById('exakey').value=localStorage.getItem('exa_key');document.getElementById('keystat').textContent='✅ จำแล้ว';}
 document.getElementById('exakey').addEventListener('keydown',e=>{if(e.key==='Enter'){localStorage.setItem('exa_key',e.target.value.trim());document.getElementById('keystat').textContent='✅ จำแล้ว';}});
-async function pFetch(url,opt){let last='?';for(const px of PROXIES){try{const r=await fetch(px+encodeURIComponent(url),opt||{});if(r.ok)return r;last='proxy '+r.status;}catch(e){last=e.message;}}throw new Error('โหลดไม่ได้ (proxy ล่มหมด: '+last+')');}
+async function pFetch(url,opt){let last='?';for(const px of PROXIES){const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),20000);try{const r=await fetch(px+encodeURIComponent(url),{...(opt||{}),signal:ctl.signal});clearTimeout(to);if(r.ok)return r;last='proxy '+r.status;}catch(e){clearTimeout(to);last=(e.name==='AbortError')?'timeout':e.message;}}throw new Error('โหลดไม่ได้ (proxy ล่มหมด: '+last+')');}
 async function pGet(url){return(await pFetch(url)).text();}
 async function pPost(url,body,headers){return(await pFetch(url,{method:'POST',headers,body})).json();}
 function hostOf(url){try{return new URL(url).hostname.replace(/^www\./,'')}catch(e){return''}}
@@ -244,13 +244,18 @@ async function expandWeb(url,title){
     const og=doc.querySelector('meta[property="og:image"]');
     if(og)document.getElementById('wdimg').src=og.content;
     const eps={};
+    const base=url.replace(/\/+$/,'')+'/';
+    const esc=base.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
     [...doc.querySelectorAll('a[href]')].forEach(a=>{
       let href=a.getAttribute('href')||'';
       if(href.startsWith('/'))href=new URL(href,url).href;
       if(!href.startsWith('http'))return;
-      const m=href.match(/(?:-ep-|[\/_-]ep[-_]?|episode[-_]?|ตอนที่[-_ ]?)(\d{1,3})/i);
-      if(m&&+m[1]<2000&&!eps[+m[1]])eps[+m[1]]=href;
+      let m=href.match(/(?:-ep-|[\/_-]ep[-_]?|episode[-_]?|ตอนที่[-_ ]?)(\d{1,3})/i);
+      if(m&&+m[1]<2000&&!eps[+m[1]]){eps[+m[1]]=href;return;}
+      m=href.match(new RegExp('^'+esc+'(\\d{1,3})/?$'));
+      if(m&&+m[1]<500&&!eps[+m[1]])eps[+m[1]]=href;
     });
+    if(Object.keys(eps).length)eps[1]=eps[1]||url;
     EP=Object.keys(eps).map(Number).sort((a,b)=>a-b).map(n=>({ep:n,url:eps[n]}));
     ASC=true;renderWEps();
     document.getElementById('wdcount').textContent=EP.length?('พบ '+EP.length+' ตอน — กดเพื่อดูแบบคลีน'):'หน้านี้ไม่มีลิสต์ตอน กด “ดูเลย” เพื่อเปิดตอนนี้';
