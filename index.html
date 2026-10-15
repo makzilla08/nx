@@ -130,10 +130,40 @@ async function scanDrive(html){
   }
   return null;
 }
+async function resolve037(pageUrl){
+  const html=await pGet(pageUrl);
+  const tickets=[...html.matchAll(/\?streamhls_ticket=1[^"'\\s]*?target=([A-Za-z0-9+/=]+)/g)].map(m=>m[1]);
+  if(!tickets.length)throw new Error('no-037');
+  for(const tb64 of tickets){
+    try{
+      let apiHost='';
+      try{apiHost=new URL(atob(tb64)).origin;}catch(e){continue;}
+      const thtml=await pGet('https://'+new URL(pageUrl).host+'/?streamhls_ticket=1&target='+tb64);
+      const cfg=thtml.match(/embedId:\s*"([^"]+)"[\s\S]{0,600}?sessionUrl:\s*"([^"]+)"/);
+      if(!cfg)continue;
+      const sess=JSON.parse(await pGet(apiHost+cfg[2]));
+      const gate=sess?.ad_gate?.gate_token;
+      const srcs=(sess?.sources||[]).filter(x=>x.playback_mode!=='iframe');
+      if(!gate||!srcs.length)continue;
+      for(const sc of srcs){
+        try{
+          const pb=await pPost(apiHost+'/api/player/'+cfg[1]+'/playback'+cfg[2].slice(cfg[2].indexOf('?')),
+            JSON.stringify({source_id:sc.id,gate_token:gate}),{'Content-Type':'application/json'});
+          if(!pb?.embed_url)continue;
+          const ehtml=await pGet(apiHost+pb.embed_url);
+          const mu=ehtml.match(/"(\/sources\/[^"]+?master\.m3u8\?[^"]+)"/);
+          if(mu)return{src:apiHost+mu[1],label:sess.title+' '+sc.label};
+        }catch(e){}
+      }
+    }catch(e){}
+  }
+  throw new Error('no-037');
+}
 async function resolveUrl(pageUrl){
   if(/\.(m3u8|mp4)(\?|$)/.test(pageUrl))return{src:pageUrl};
   if(/youtube|youtu\.be/.test(pageUrl)){const id=ytId(pageUrl);if(id)return{yt:id};}
   const gd=drivePreview(pageUrl);if(gd)return{embed:gd};
+  if(/037-?h(dd|d)?\./.test(pageUrl)){try{return await resolve037(pageUrl);}catch(e){if(e.message!=='no-037')throw e;}}
   const html=await pGet(pageUrl),doc=new DOMParser().parseFromString(html,'text/html');
   for(const f of doc.querySelectorAll('iframe')){
     const emb0=f.getAttribute('src')||f.getAttribute('data-src')||'';
