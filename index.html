@@ -41,6 +41,12 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 <button onclick="preset('หนังชนโรง 2026')">🍿 หนังชนโรง</button>
 <button onclick="preset('ซีรี่ส์ไทย 2026')">🇹🇭 ซีรี่ส์ไทย</button>
 </div>
+<div class="chips">
+<button onclick="platform('Apple TV+')">🍎 Apple TV+</button>
+<button onclick="platform('Netflix')">🅽 Netflix</button>
+<button onclick="platform('Prime Video')">📦 Prime</button>
+<button onclick="platform('HBO')">🎬 HBO</button>
+</div>
 <div class="srcs"><span class="note">แหล่งเบื้องหลัง:</span><span class="src">anime-hit</span><span class="src">037HD</span><span class="src">AnimePahe</span><span class="src">YouTube</span><span class="src">+ทั่วเน็ต</span></div>
 <div class="keyrow">🔑 Exa key (มีค่า default สำหรับครอบครัว — ใส่ทับได้): <input type="password" id="exakey" placeholder="วาง key แล้ว Enter"> <span id="keystat"></span></div>
 </div>
@@ -130,6 +136,11 @@ function toggleOrder(){ASC=!ASC;renderEps();}
 function fmtT(s){s=+s;return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
 function skipIntro(){const v=document.getElementById('v');v.currentTime=Math.min(v.currentTime+(+document.getElementById('skip').value),(v.duration||1e9)-2);}
 function preset(q){document.getElementById('q').value=q;search();}
+function platform(p){
+  document.getElementById('q').value=p+' ซีรี่ส์น่าดู';
+  searchHit(p+' series');
+  searchWeb(p+' best series 2026 watch online ซับไทย');
+}
 async function search(){
   const q=document.getElementById('q').value.trim();if(!q)return;
   searchHit(q);searchWeb(q);
