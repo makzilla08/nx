@@ -16,6 +16,13 @@ button.ghost{background:#222}
 .card:hover{border-color:#1f6feb}.card img{width:100%;height:200px;object-fit:cover;background:#222}
 .card div{padding:8px;font-size:12px}.card .badge{color:#7ee2a8;font-size:11px}
 .web{margin:8px 0;font-size:14px}.web a{color:#7cf;display:block;padding:7px 0;border-bottom:1px solid #222;text-decoration:none}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.tabs button{background:#1a2333;font-weight:400}.tabs button.on{background:#1f6feb}
+.bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin:10px 0}
+.bcard{background:#151b28;border-radius:10px;overflow:hidden;cursor:pointer;border:1px solid #232d45}
+.bcard:hover{border-color:#1f6feb}.bcard img{width:100%;height:170px;object-fit:cover;background:#222}
+.bcard .t{padding:6px;font-size:11px;min-height:44px}.bcard .s{color:#ffd75e;font-size:11px;padding:0 6px 6px}
+.adetail{display:none;background:#101724;border:1px solid #2a3550;border-radius:12px;padding:14px;margin:12px 0}
+.adetail img{width:110px;height:155px;object-fit:cover;border-radius:8px;background:#222}
 video{width:100%;background:#000;margin-top:12px;border-radius:12px}
 .eps{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0;max-height:300px;overflow:auto}
 .eps button{padding:8px 12px;min-width:64px;background:#222}.eps button.cur{background:#0a7}
@@ -49,6 +56,15 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 </div>
 <div class="srcs"><span class="note">แหล่งเบื้องหลัง:</span><span class="src">anime-hit</span><span class="src">037HD</span><span class="src">AnimePahe</span><span class="src">YouTube</span><span class="src">+ทั่วเน็ต</span></div>
 </div>
+<h3>🎌 เลือกอนิเมะจากฐานข้อมูล</h3>
+<div class="tabs" id="browsetabs">
+<button data-a="trending" class="on" onclick="browse('trending',this)">🔥 กำลังฮิต</button>
+<button data-a="popular" onclick="browse('popular',this)">⭐ ยอดนิยม</button>
+<button data-a="top" onclick="browse('top',this)">🏆 คะแนนสูงสุด</button>
+<button data-a="seasonal" onclick="browse('seasonal',this)">📅 ซีซั่นนี้</button>
+</div>
+<div class="adetail" id="adetail"></div>
+<div class="bgrid" id="browse"></div>
 <div id="results" class="grid"></div>
 <h3 id="webhead" style="display:none">🌐 จากทั่วเน็ต</h3>
 <div id="webres" class="web"></div>
@@ -276,6 +292,39 @@ async function search(){
   const q=document.getElementById('q').value.trim();if(!q)return;
   searchHit(q);searchWeb(q);
 }
+async function browse(action,btn){
+  document.querySelectorAll('#browsetabs button').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  const g=document.getElementById('browse');g.innerHTML='<p class="note">⏳ กำลังโหลด...</p>';
+  try{
+    const r=await fetch('/api/anime?action='+action);if(!r.ok)throw new Error('server '+r.status);
+    const j=await r.json();g.innerHTML='';
+    (j.items||[]).forEach(m=>{
+      const d=document.createElement('div');d.className='bcard';
+      d.innerHTML='<img loading="lazy" src="'+m.cover+'"><div class="t">'+m.title+'</div><div class="s">'+(m.score?('★ '+(m.score/10).toFixed(1)):'★ -')+(m.episodes?(' • '+m.episodes+' ตอน'):'')+'</div>';
+      d.onclick=()=>animeInfo(m.id,m.title);g.appendChild(d);
+    });
+    if(!g.children.length)g.innerHTML='<p class="note">โหลดไม่ได้ ลองใหม่</p>';
+  }catch(e){g.innerHTML='<p class="note">โหลดไม่ได้: '+e.message.slice(0,80)+'</p>';}
+}
+async function animeInfo(id,fallbackTitle){
+  const d=document.getElementById('adetail');d.style.display='block';
+  d.innerHTML='<p class="note">⏳ กำลังโหลดข้อมูล...</p>';d.scrollIntoView();
+  try{
+    const r=await fetch('/api/anime?action=info&id='+id);if(!r.ok)throw new Error('server '+r.status);
+    const m=(await r.json()).item;
+    const desc=(m.description||'').replace(/<[^>]+>/g,'').slice(0,300);
+    let trailer='';
+    if(m.trailer&&m.trailer.site==='youtube')trailer='<button class="ghost" onclick="playYT(\''+m.trailer.id+'\');document.getElementById(\'yt\').scrollIntoView()">▶ ตัวอย่าง</button>';
+    d.innerHTML='<div class="row" style="align-items:flex-start"><img src="'+(m.coverImage?.large||'')+'">'
+      +'<div style="flex:1"><h3 style="margin:0 0 6px">'+m.pickedTitle+'</h3>'
+      +'<p class="note">'+(m.averageScore?('★ '+(m.averageScore/10).toFixed(1)+' '):'')+(m.episodes?(m.episodes+' ตอน '):'')+(m.genres||[]).join(' • ')+'</p>'
+      +'<p class="note">'+desc+(desc.length>=300?'…':'')+'</p>'
+      +'<div class="row"><button onclick="watchTitle(\''+m.pickedTitle.replace(/'/g,"\\'")+'\')">🔍 หาที่ดู</button>'+trailer+'</div>'
+      +'</div></div>';
+  }catch(e){d.innerHTML='<p class="note">โหลดไม่ได้ — <button onclick="watchTitle(\''+String(fallbackTitle||'').replace(/'/g,"\\'")+'\')">🔍 หาที่ดูเลย</button></p>';}
+}
+function watchTitle(t){document.getElementById('q').value=t;search();document.getElementById('webhead').scrollIntoView();}
 async function searchHit(q){
   try{
     const html=await pGet(BASE+'/?s='+encodeURIComponent(q));
@@ -395,4 +444,5 @@ function renderEps(){
 }
 document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
 document.getElementById('u').addEventListener('keydown',e=>{if(e.key==='Enter')resolve()});
+browse('trending');
 </script></body></html>
