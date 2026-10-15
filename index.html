@@ -85,6 +85,19 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 <span class="note" id="directurl" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
 <button class="ghost" onclick="copyDirect()">📋 ก็อปลิงก์</button>
 </div>
+<div style="background:#141a26;border:1px solid #2a3550;border-radius:12px;padding:14px;margin-top:14px">
+<b>🧰 เปิดไม่ได้? ช่วย NX หน่อย (30 วิ)</b>
+<ol class="note" style="margin:8px 0;padding-left:20px;line-height:1.9">
+<li>กดปุ่ม <b>เปิดต้นทาง</b> ที่การ์ดเรื่อง</li>
+<li>ในหน้าเว็บนั้น หาปุ่ม <b>Player 1/2/3</b> หรือ <b>ตัวเล่นหลัก</b> แล้วจำไว้ว่ากดตัวไหน</li>
+<li>ก็อป <b>URL ทั้งแถบ</b> ของหน้านั้นกลับมาวางช่องล่างแล้วกด <b>▶ ลองเปิด</b></li>
+<li>รับลิงก์ตรงแบบ m3u8/mp4, Google Drive, YouTube, qplay, ticket 037 — วางได้หมด</li>
+</ol>
+<div class="row">
+<input type="text" id="manual" placeholder="วาง URL ที่ก็อปมา...">
+<button onclick="manualGo()">▶ ลองเปิด</button>
+</div>
+</div>
 <footer>NX • static 100% • ดูบนมือถือ / Smart TV ได้ • ข้อมูลจากเว็บฟรี</footer>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 <script>
@@ -164,9 +177,46 @@ async function resolve037(pageUrl){
   }
   throw new Error('no-037');
 }
+async function ticketApiHost(turl,thtml){
+  const m=thtml.match(/https?:\/\/playlist\.streamhls[a-z0-9]*\.com/);
+  if(m)return m[0];
+  if(!/037-hdd/.test(new URL(turl).origin))return new URL(turl).origin;
+  return null;
+}
+async function resolveTicket(turl){
+  const thtml=await pGet(turl);
+  const cfg=thtml.match(/embedId:\s*"([^"]+)"[\s\S]{0,600}?sessionUrl:\s*"([^"]+)"/);
+  if(!cfg)throw new Error('no-ticket');
+  const apiHost=await ticketApiHost(turl,thtml);
+  if(!apiHost)throw new Error('no-ticket');
+  const sess=JSON.parse(await pGet(apiHost+cfg[2]));
+  const gate=sess?.ad_gate?.gate_token;
+  const srcs=(sess?.sources||[]).filter(x=>x.playback_mode!=='iframe');
+  if(!gate||!srcs.length)throw new Error('no-ticket');
+  for(const sc of srcs){
+    try{
+      const pb=await pPost(apiHost+'/api/player/'+cfg[1]+'/playback'+cfg[2].slice(cfg[2].indexOf('?')),
+        JSON.stringify({source_id:sc.id,gate_token:gate}),{'Content-Type':'application/json'});
+      if(!pb?.embed_url)continue;
+      const ehtml=await pGet(apiHost+pb.embed_url);
+      const mu=ehtml.match(/"(\/sources\/[^"]+?master\.m3u8\?[^"]+)"/);
+      if(mu)return{src:apiHost+mu[1],label:(sess.title||'')+' '+sc.label};
+    }catch(e){}
+  }
+  throw new Error('no-ticket');
+}
 async function resolveUrl(pageUrl){
   if(/\.(m3u8|mp4)(\?|$)/.test(pageUrl))return{src:pageUrl};
   if(/youtube|youtu\.be/.test(pageUrl)){const id=ytId(pageUrl);if(id)return{yt:id};}
+  if(pageUrl.includes('streamhls_ticket=1')){try{return await resolveTicket(pageUrl);}catch(e){if(e.message!=='no-ticket')throw e;}}
+  if(/\/player\/source\/v1\./.test(pageUrl)){
+    const ehtml=await pGet(pageUrl);
+    const mu=ehtml.match(/"(\/sources\/[^"]+?master\.m3u8\?[^"]+)"/);
+    if(mu){const host=new URL(pageUrl).origin;return{src:host+mu[1]};}
+  }
+  if(/qplay\.xyz\/play\/view\.php/.test(pageUrl)){
+    const dd=await scanDrive(await pGet(pageUrl));if(dd)return dd;
+  }
   const gd=drivePreview(pageUrl);if(gd)return{embed:gd};
   if(/037-?h(dd|d)?\./.test(pageUrl)){try{return await resolve037(pageUrl);}catch(e){if(e.message!=='no-037')throw e;}}
   const html=await pGet(pageUrl),doc=new DOMParser().parseFromString(html,'text/html');
@@ -340,4 +390,6 @@ function renderEps(){
 }
 document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
 document.getElementById('u').addEventListener('keydown',e=>{if(e.key==='Enter')resolve()});
+function manualGo(){const v=document.getElementById('manual').value.trim();if(!v)return;document.getElementById('u').value=v;setNow(v,-1);resolve();document.getElementById('v').scrollIntoView();}
+document.getElementById('manual').addEventListener('keydown',e=>{if(e.key==='Enter')manualGo()});
 </script></body></html>
