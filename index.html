@@ -94,7 +94,9 @@ const EXA_BUILTIN='68183d99-ae4b-443f-865c-69023b33d2b7';
 const exaKey=()=>(localStorage.getItem('exa_key')||'').trim()||EXA_BUILTIN;
 if(localStorage.getItem('exa_key')){document.getElementById('exakey').value=localStorage.getItem('exa_key');document.getElementById('keystat').textContent='✅ จำแล้ว';}
 document.getElementById('exakey').addEventListener('keydown',e=>{if(e.key==='Enter'){localStorage.setItem('exa_key',e.target.value.trim());document.getElementById('keystat').textContent='✅ จำแล้ว';}});
-async function pFetch(url,opt){let last='?';for(const px of PROXIES){const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),20000);try{const r=await fetch(px.p+(px.e?encodeURIComponent(url):url),{...(opt||{}),signal:ctl.signal});clearTimeout(to);if(r.ok)return r;last='proxy '+r.status;}catch(e){clearTimeout(to);last=(e.name==='AbortError')?'timeout':e.message;}}throw new Error('โหลดไม่ได้ (proxy ล่มหมด: '+last+')');}
+async function pFetch(url,opt){let last='?';
+  try{const ctl0=new AbortController(),to0=setTimeout(()=>ctl0.abort(),12000);const rd=await fetch(url,{...(opt||{}),signal:ctl0.signal});clearTimeout(to0);if(rd.ok)return rd;}catch(e){last='direct:'+e.message;}
+  for(const px of PROXIES){const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),20000);try{const r=await fetch(px.p+(px.e?encodeURIComponent(url):url),{...(opt||{}),signal:ctl.signal});clearTimeout(to);if(r.ok)return r;last='proxy '+r.status;}catch(e){clearTimeout(to);last=(e.name==='AbortError')?'timeout':e.message;}}throw new Error('โหลดไม่ได้ (proxy ล่มหมด: '+last+')');}
 async function pGet(url){return(await pFetch(url)).text();}
 async function pPost(url,body,headers){return(await pFetch(url,{method:'POST',headers,body})).json();}
 function hostOf(url){try{return new URL(url).hostname.replace(/^www\./,'')}catch(e){return''}}
