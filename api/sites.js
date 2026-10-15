@@ -25,6 +25,8 @@ function decodeEnt(s) {
 async function fetchHtml(url) {
   const tries = [url,
     'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+    'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
+    'https://corsproxy.io/?url=' + encodeURIComponent(url),
     'https://cors.eu.org/' + url];
   let last = '';
   for (const u of tries) {
