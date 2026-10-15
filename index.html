@@ -88,13 +88,13 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 <footer>NX • static 100% • ดูบนมือถือ / Smart TV ได้ • ข้อมูลจากเว็บฟรี</footer>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 <script>
-const PROXIES=['https://cors.eu.org/','https://api.allorigins.win/raw?url=','https://api.cors.lol/?url='],BASE='https://anime-hit.com';
+const PROXIES=[{p:'https://cors.eu.org/',e:0},{p:'https://api.allorigins.win/raw?url=',e:1},{p:'https://api.cors.lol/?url=',e:0}],BASE='https://anime-hit.com';
 const u=()=>document.getElementById('u').value.trim();
 const EXA_BUILTIN='68183d99-ae4b-443f-865c-69023b33d2b7';
 const exaKey=()=>(localStorage.getItem('exa_key')||'').trim()||EXA_BUILTIN;
 if(localStorage.getItem('exa_key')){document.getElementById('exakey').value=localStorage.getItem('exa_key');document.getElementById('keystat').textContent='✅ จำแล้ว';}
 document.getElementById('exakey').addEventListener('keydown',e=>{if(e.key==='Enter'){localStorage.setItem('exa_key',e.target.value.trim());document.getElementById('keystat').textContent='✅ จำแล้ว';}});
-async function pFetch(url,opt){let last='?';for(const px of PROXIES){const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),20000);try{const r=await fetch(px+encodeURIComponent(url),{...(opt||{}),signal:ctl.signal});clearTimeout(to);if(r.ok)return r;last='proxy '+r.status;}catch(e){clearTimeout(to);last=(e.name==='AbortError')?'timeout':e.message;}}throw new Error('โหลดไม่ได้ (proxy ล่มหมด: '+last+')');}
+async function pFetch(url,opt){let last='?';for(const px of PROXIES){const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),20000);try{const r=await fetch(px.p+(px.e?encodeURIComponent(url):url),{...(opt||{}),signal:ctl.signal});clearTimeout(to);if(r.ok)return r;last='proxy '+r.status;}catch(e){clearTimeout(to);last=(e.name==='AbortError')?'timeout':e.message;}}throw new Error('โหลดไม่ได้ (proxy ล่มหมด: '+last+')');}
 async function pGet(url){return(await pFetch(url)).text();}
 async function pPost(url,body,headers){return(await pFetch(url,{method:'POST',headers,body})).json();}
 function hostOf(url){try{return new URL(url).hostname.replace(/^www\./,'')}catch(e){return''}}
