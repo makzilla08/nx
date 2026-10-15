@@ -22,6 +22,10 @@ export default async function handler(req, res) {
   if (!target || !/^https?:\/\//i.test(target)) {
     return res.status(400).json({ error: 'need ?url=https://...' });
   }
+  const referer = (req.query.ref || '').toString();
+  if (referer && !/^https?:\/\//i.test(referer)) {
+    return res.status(400).json({ error: 'bad ref' });
+  }
   try {
     const host = new URL(target).hostname;
     const addrs = await dns.lookup(host, { all: true }).catch(() => []);
@@ -46,7 +50,7 @@ export default async function handler(req, res) {
       body: fwdBody,
       signal: ctl.signal,
       redirect: 'follow',
-      headers: fwdHeaders
+      headers: { ...fwdHeaders, ...(referer ? { Referer: referer } : {}) }
     });
     clearTimeout(to);
     if (!r.ok) return res.status(r.status).json({ error: 'upstream ' + r.status });
