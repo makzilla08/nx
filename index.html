@@ -119,7 +119,7 @@ async function pFetch(url,opt){let last='?';
 async function pGet(url){return(await pFetch(url)).text();}
 async function pPost(url,body,headers){
   try{
-    const q='?post='+encodeURIComponent(JSON.stringify({headers:headers,body:JSON.parse(body)}));
+    const q='?post='+encodeURIComponent(JSON.stringify({url:url,headers:headers,body:JSON.parse(body)}));
     const r=await pFetch(url+q);
     return await r.json();
   }catch(e){
