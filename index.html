@@ -37,9 +37,12 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 <button onclick="preset('ซีรี่ส์เกาหลีซับไทย')">🇰🇷 ซีรี่ส์เกาหลี</button>
 <button onclick="preset('อนิเมะซับไทย')">🇯🇵 อนิเมะ</button>
 <button onclick="preset('Perfect World โลกอันสมบูรณ์แบบ')">✨ โลกอันสมบูรณ์แบบ</button>
+<button onclick="preset('ดูหนังใหม่ 2026 พากย์ไทย')">🎬 หนังใหม่ 2026</button>
+<button onclick="preset('หนังชนโรง 2026')">🍿 หนังชนโรง</button>
+<button onclick="preset('ซีรี่ส์ไทย 2026')">🇹🇭 ซีรี่ส์ไทย</button>
 </div>
 <div class="srcs"><span class="note">แหล่งเบื้องหลัง:</span><span class="src">anime-hit</span><span class="src">037HD</span><span class="src">AnimePahe</span><span class="src">YouTube</span><span class="src">+ทั่วเน็ต</span></div>
-<div class="keyrow">🔑 Exa key (ค้นทั่วเน็ต เก็บในเครื่องนี้เท่านั้น): <input type="password" id="exakey" placeholder="วาง key แล้ว Enter"> <span id="keystat"></span></div>
+<div class="keyrow">🔑 Exa key (ผลแม่นขึ้น ไม่บังคับ — เก็บในเครื่องนี้เท่านั้น): <input type="password" id="exakey" placeholder="วาง key แล้ว Enter"> <span id="keystat"></span></div>
 </div>
 <div id="results" class="grid"></div>
 <h3 id="webhead" style="display:none">🌐 จากทั่วเน็ต</h3>
@@ -149,23 +152,26 @@ async function searchHit(q){
     if(!g.children.length)g.innerHTML='<p class="note">ไม่เจอใน anime-hit</p>';
   }catch(e){document.getElementById('results').innerHTML='<p class="note">anime-hit โหลดไม่ได้</p>';}
 }
+function webLink(url,title){
+  const w=document.getElementById('webres');
+  const a=document.createElement('a');a.href='#';
+  a.textContent='['+hostOf(url)+'] '+title;a.title=url;
+  a.onclick=ev=>{ev.preventDefault();EP=[];EPTITLE='';document.getElementById('u').value=url;setNow(title,-1);resolve();document.getElementById('v').scrollIntoView();};
+  w.appendChild(a);
+}
 async function searchWeb(q){
   const w=document.getElementById('webres');
   document.getElementById('webhead').style.display='block';
-  if(!exaKey()){w.innerHTML='<p class="note">ใส่ Exa key ด้านบนเพื่อค้นเว็บฟรีทุกเจ้า (037HD, AnimePahe ฯลฯ)</p>';return;}
   w.innerHTML='<p class="note">🔎 กำลังค้นทั่วเน็ต...</p>';
+  // 2) Exa ผ่าน proxy ต้องมี key (Bing/Mojeek ใช้ไม่ได้ โดนบล็อก/ผลขยะ)
+  if(!exaKey()){w.innerHTML='<p class="note">💡 อยากเห็นผลจาก 037HD / AnimePahe / เว็บอื่น → สมัคร key ฟรีที่ exa.ai แล้ววางด้านบน (จำในเครื่องนี้เท่านั้น)</p>';return;}
   try{
-    const r=await fetch('https://api.exa.ai/search',{method:'POST',
+    const r=await fetch(PROXY+'https://api.exa.ai/search',{method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':exaKey()},
       body:JSON.stringify({query:q+' ดูฟรี ซับไทย พากย์ไทย',numResults:15})});
     const j=await r.json();w.innerHTML='';
-    (j.results||[]).forEach(s=>{
-      const a=document.createElement('a');a.href='#';
-      a.textContent='['+hostOf(s.url)+'] '+s.title;a.title=s.url;
-      a.onclick=ev=>{ev.preventDefault();EP=[];EPTITLE='';document.getElementById('u').value=s.url;setNow(s.title,-1);resolve();document.getElementById('v').scrollIntoView();};
-      w.appendChild(a);
-    });
-    if(!(j.results||[]).length)w.innerHTML='<p class="note">ไม่เจอผลเว็บ</p>';
+    (j.results||[]).forEach(s=>webLink(s.url,s.title||s.url));
+    if(!w.children.length)w.innerHTML='<p class="note">ไม่เจอผลเว็บ (เช็ก key)</p>';
   }catch(e){w.innerHTML='<p class="note">ค้นเว็บล้มเหลว (เช็ก key/เน็ต)</p>';}
 }
 async function loadEps(seriesUrl){
