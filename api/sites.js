@@ -9,7 +9,15 @@ const SOURCES = {
   'fairy-latest': 'https://fairyanime.net/',
   'fairy-sub': 'https://fairyanime.net/category/ซับไทย/',
   'fairy-dub': 'https://fairyanime.net/category/พากย์ไทย/',
-  'fairy-top': 'https://fairyanime.net/scoretop/'
+  'fairy-top': 'https://fairyanime.net/scoretop/',
+  'o37-new': 'https://037hddd.com/',
+  'o37-movies': 'https://037hddd.com/movies',
+  'm285-new': 'https://hd.movie285.com/',
+  'm285-thai': 'https://hd.movie285.com/category/%e0%b8%ab%e0%b8%99%e0%b8%b1%e0%b8%87%e0%b9%84%e0%b8%97%e0%b8%a2/',
+  'm285-action': 'https://hd.movie285.com/category/action/',
+  'm285-animation': 'https://hd.movie285.com/category/animation/',
+  'sd-new': 'https://seriesdet.com/',
+  'sd-china': 'https://seriesdet.com/category/chinese-series/'
 };
 
 function absUrl(href, base) {
@@ -61,6 +69,66 @@ function parseHit(html, base) {
   return out;
 }
 
+function parseM285(html, base) {
+  const out = [], seen = new Set();
+  for (const m of html.matchAll(/<figure class="movie-box">[\s\S]*?<\/figure>/g)) {
+    const a = m[0];
+    const lm = a.match(/<a[^>]*href="([^"]+)"/);
+    if (!lm) continue;
+    const url = absUrl(lm[1], base);
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    const title = decodeEnt(((a.match(/<h2[^>]*>([^<]+)<\/h2>/) || [])[1] || url).trim());
+    const img = (a.match(/<img[^>]*src="([^"]+)"/) || [])[1] || '';
+    out.push({ url, title, cover: img, src: 'movie285' });
+  }
+  return out;
+}
+
+function parseSeriesdet(html, base) {
+  const out = [], seen = new Set();
+  for (const m of html.matchAll(/<article[\s\S]*?(?=<article|$)/g)) {
+    const a = m[0];
+    const lm = a.match(/<a[^>]*href="([^"]+)"[^>]*class="post-url post-title"|class="post-url post-title"[^>]*href="([^"]+)"/)
+      || a.match(/<h2 class="title">\s*<a href="([^"]+)"/);
+    if (!lm) continue;
+    const url = absUrl(lm[1] || lm[2], base);
+    if (!url || seen.has(url) || /#|author|category/.test(url)) continue;
+    seen.add(url);
+    const title = decodeEnt(((a.match(/<h2 class="title">[\s\S]*?<a[^>]*>([^<]+)</) || [])[1] || url).replace(/&hellip;.*$/, '').trim());
+    const img = (a.match(/background-image:\s*url\((https:[^)]+)\)/) || [])[1] || '';
+    out.push({ url, title, cover: img, src: 'seriesdet' });
+  }
+  return out;
+}
+
+function parseO37(html, base) {
+  const out = [], seen = new Set();
+  for (const m of html.matchAll(/<a class="movie-card[^>]*href="([^"]+)"[\s\S]*?<\/a>/g)) {
+    const url = absUrl(m[1], base);
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    const a = m[0];
+    const title = decodeEnt(((a.match(/<div class="card-title">([^<]+)</) || [])[1] || url).trim());
+    let img = (a.match(/<img[^>]*src="([^"]+)"/) || [])[1] || '';
+    img = img.replace(/&amp;/g, '&');
+    const q = (a.match(/badge-q-\w+">([^<]+)/) || [])[1] || '';
+    const dub = /cad-dub">([^<]+)/.test(a), sub = /cad-sub">([^<]+)/.test(a);
+    const badge = [q, dub && sub ? 'พากย์+ซับ' : dub ? 'พากย์ไทย' : sub ? 'ซับไทย' : ''].filter(Boolean).join(' ');
+    out.push({ url, title, cover: absUrl(img, base) || '', badge, src: '037hd' });
+  }
+  return out;
+}
+
+function pickParser(source) {
+  if (source.startsWith('hit-')) return parseHit;
+  if (source.startsWith('fairy-')) return parseFairy;
+  if (source.startsWith('m285-')) return parseM285;
+  if (source.startsWith('sd-')) return parseSeriesdet;
+  if (source.startsWith('o37-')) return parseO37;
+  return parseHit;
+}
+
 function parseFairy(html, base) {
   const out = [], seen = new Set();
   for (const m of html.matchAll(/latest-movie-img-container[\s\S]*?<h3>\s*<a href="([^"]+)"[^>]*>([^<]+)<\/a>/g)) {
@@ -85,7 +153,7 @@ export default async function handler(req, res) {
   const url = pg > 1 ? base.replace(/\/$/, '') + '/page/' + pg + '/' : base;
   try {
     const html = await fetchHtml(url);
-    const items = source.startsWith('hit-') ? parseHit(html, base) : parseFairy(html, base);
+    const items = pickParser(source)(html, base);
     return res.status(200).json({ items });
   } catch (e) {
     return res.status(502).json({ error: String(e.message || e).slice(0, 120) });

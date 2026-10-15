@@ -56,6 +56,13 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 </div>
 <div class="srcs"><span class="note">แหล่งเบื้องหลัง:</span><span class="src">anime-hit</span><span class="src">037HD</span><span class="src">AnimePahe</span><span class="src">YouTube</span><span class="src">+ทั่วเน็ต</span></div>
 </div>
+<h3>📚 เลือกดูจากฐานข้อมูล</h3>
+<div class="tabs" id="bigtabs">
+<button data-p="anime" class="on" onclick="switchPanel('anime',this)">🎌 อนิเมะ</button>
+<button data-p="movie" onclick="switchPanel('movie',this)">🎬 หนัง</button>
+<button data-p="series" onclick="switchPanel('series',this)">📺 ซีรี่ส์</button>
+</div>
+<div id="panel-anime">
 <h3>🎌 เลือกอนิเมะจากฐานข้อมูล</h3>
 <div class="tabs" id="browsetabs">
 <button data-a="trending" class="on" onclick="browse('trending',this)">🔥 กำลังฮิต</button>
@@ -67,17 +74,36 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 <div class="bgrid" id="browse"></div>
 <h3>🇹🇭 เว็บซับไทย / พากย์ไทย</h3>
 <div class="tabs" id="sitetabs">
-<button data-s="hit-latest" class="on" onclick="siteBrowse('hit-latest',this)">🆕 hit อัพเดท</button>
-<button data-s="hit-sub" onclick="siteBrowse('hit-sub',this)">💬 hit ซับไทย</button>
-<button data-s="hit-dub" onclick="siteBrowse('hit-dub',this)">🔊 hit พากย์ไทย</button>
-<button data-s="hit-china" onclick="siteBrowse('hit-china',this)">🐉 hit จีน/เกาหลี</button>
-<button data-s="hit-movie" onclick="siteBrowse('hit-movie',this)">🎬 hit เดอะมูฟวี่</button>
-<button data-s="fairy-latest" onclick="siteBrowse('fairy-latest',this)">🧚 fairy อัพเดท</button>
-<button data-s="fairy-sub" onclick="siteBrowse('fairy-sub',this)">💬 fairy ซับไทย</button>
-<button data-s="fairy-dub" onclick="siteBrowse('fairy-dub',this)">🔊 fairy พากย์ไทย</button>
-<button data-s="fairy-top" onclick="siteBrowse('fairy-top',this)">🏆 fairy คะแนนท็อป</button>
+<button data-s="hit-latest" class="on" onclick="siteBrowse('hit-latest',this)">🆕 อัพเดท</button>
+<button data-s="hit-sub" onclick="siteBrowse('hit-sub',this)">💬 ซับไทย</button>
+<button data-s="hit-dub" onclick="siteBrowse('hit-dub',this)">🔊 พากย์ไทย</button>
+<button data-s="hit-china" onclick="siteBrowse('hit-china',this)">🐉 จีน/เกาหลี</button>
+<button data-s="hit-movie" onclick="siteBrowse('hit-movie',this)">🎬 เดอะมูฟวี่</button>
 </div>
 <div class="bgrid" id="sitebrowse"></div>
+</div>
+<div id="panel-movie" style="display:none">
+<h3>🎬 หนังน่าดู</h3>
+<p class="note" id="movienote">ขุดตรงจาก 037hd + movie285 ผ่านหลังบ้าน NX</p>
+<div class="tabs" id="movietabs">
+<button data-s="o37-new" class="on" onclick="siteBrowse('o37-new',this,'moviebrowse')">🆕 หนังมาใหม่ (037)</button>
+<button data-s="o37-movies" onclick="siteBrowse('o37-movies',this,'moviebrowse')">🎬 หนังทั้งหมด (037)</button>
+<button data-s="m285-new" onclick="siteBrowse('m285-new',this,'moviebrowse')">🆕 หนังใหม่ (285)</button>
+<button data-s="m285-thai" onclick="siteBrowse('m285-thai',this,'moviebrowse')">🇹🇭 หนังไทย (285)</button>
+<button data-s="m285-action" onclick="siteBrowse('m285-action',this,'moviebrowse')">💥 แอคชั่น (285)</button>
+<button data-s="m285-animation" onclick="siteBrowse('m285-animation',this,'moviebrowse')">✨ อนิเมชั่น (285)</button>
+</div>
+<div class="bgrid" id="moviebrowse"></div>
+</div>
+<div id="panel-series" style="display:none">
+<h3>📺 ซีรี่ส์น่าดู</h3>
+<p class="note" id="seriesnote">ขุดตรงจาก seriesdet ผ่านหลังบ้าน NX</p>
+<div class="tabs" id="seriestabs">
+<button data-s="sd-new" class="on" onclick="siteBrowse('sd-new',this,'seriesbrowse')">🆕 อัพเดทล่าสุด</button>
+<button data-s="sd-china" onclick="siteBrowse('sd-china',this,'seriesbrowse')">🐉 ซีรี่ส์จีน</button>
+</div>
+<div class="bgrid" id="seriesbrowse"></div>
+</div>
 <div id="results" class="grid"></div>
 <h3 id="webhead" style="display:none">🌐 จากทั่วเน็ต</h3>
 <div id="webres" class="web"></div>
@@ -338,10 +364,19 @@ async function animeInfo(id,fallbackTitle){
   }catch(e){d.innerHTML='<p class="note">โหลดไม่ได้ — <button onclick="watchTitle(\''+String(fallbackTitle||'').replace(/'/g,"\\'")+'\')">🔍 หาที่ดูเลย</button></p>';}
 }
 function watchTitle(t){document.getElementById('q').value=t;search();document.getElementById('webhead').scrollIntoView();}
-async function siteBrowse(source,btn){
-  document.querySelectorAll('#sitetabs button').forEach(b=>b.classList.remove('on'));
+function switchPanel(p,btn){
+  document.querySelectorAll('#bigtabs button').forEach(b=>b.classList.remove('on'));
   if(btn)btn.classList.add('on');
-  const g=document.getElementById('sitebrowse');g.innerHTML='<p class="note">⏳ กำลังโหลด...</p>';
+  document.getElementById('panel-anime').style.display=p==='anime'?'block':'none';
+  document.getElementById('panel-movie').style.display=p==='movie'?'block':'none';
+  document.getElementById('panel-series').style.display=p==='series'?'block':'none';
+}
+async function siteBrowse(source,btn,grid){
+  grid=grid||'sitebrowse';
+  const tabs=btn&&btn.parentElement?btn.parentElement.id:'sitetabs';
+  document.querySelectorAll('#'+tabs+' button').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  const g=document.getElementById(grid);g.innerHTML='<p class="note">⏳ กำลังโหลด...</p>';
   try{
     const r=await fetch('/api/sites?source='+source);if(!r.ok)throw new Error('server '+r.status);
     const j=await r.json();g.innerHTML='';
