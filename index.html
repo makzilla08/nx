@@ -108,20 +108,46 @@ function play(src){
 function playYT(id){document.getElementById('v').style.display='none';const f=document.getElementById('yt');f.style.display='block';f.src='https://www.youtube.com/embed/'+id+'?autoplay=1&rel=0';}
 function ytId(url){const m=url.match(/[?&]v=([\w-]{6,})/)||url.match(/youtu\.be\/([\w-]{6,})/)||url.match(/\/embed\/([\w-]{6,})/);return m?m[1]:null;}
 const BAD=['googlesyndication','doubleclick','sa168','huayhit','vast','preroll'];
+function b64try(s){try{const d=atob(s);return/^https?:\/\//.test(d)?d:null;}catch(e){return null;}}
+function drivePreview(url){const m=url.match(/drive\.google\.com\/file\/d\/([\w-]+)/);return m?'https://drive.google.com/file/d/'+m[1]+'/preview':null;}
+function playEmbed(url){
+  document.getElementById('v').style.display='none';const f=document.getElementById('yt');
+  f.style.display='block';f.src=url;
+}
+async function scanDrive(html){
+  // qplay-style: submitPlayer('base64',...) หรือ base64 ของ gdrive ตรงๆ
+  const found=[];
+  for(const m of html.matchAll(/submitPlayer\('([A-Za-z0-9+/=]{40,})'/g)){
+    const d=b64try(m[1]);if(d)found.push(d);
+  }
+  for(const m of html.matchAll(/['"]([A-Za-z0-9+/=]{80,})['"]/g)){
+    const d=b64try(m[1]);if(d&&/drive\.google\.com|dropbox\.com|\.mp4|\.m3u8/.test(d)&&!found.includes(d))found.push(d);
+  }
+  for(const u of found){
+    const pv=drivePreview(u);
+    if(pv)return{embed:pv};
+    if(/\.(mp4|m3u8)(\?|$)/.test(u))return{src:u};
+  }
+  return null;
+}
 async function resolveUrl(pageUrl){
   if(/\.(m3u8|mp4)(\?|$)/.test(pageUrl))return{src:pageUrl};
   if(/youtube|youtu\.be/.test(pageUrl)){const id=ytId(pageUrl);if(id)return{yt:id};}
+  const gd=drivePreview(pageUrl);if(gd)return{embed:gd};
   const html=await pGet(pageUrl),doc=new DOMParser().parseFromString(html,'text/html');
   for(const f of doc.querySelectorAll('iframe')){
-    const emb=f.getAttribute('src')||f.getAttribute('data-src')||'';
+    const emb0=f.getAttribute('src')||f.getAttribute('data-src')||'';
+    const emb=emb0.startsWith('//')?'https:'+emb0:emb0;
     if(!emb.startsWith('http')||BAD.some(b=>emb.includes(b)))continue;
     try{
       const eh=await pGet(emb);
       const vids=[...(eh.matchAll(/https?:\/\/[^"'\\\s]+\.m3u8[^"'\\\s]*/g))].map(m=>m[0]);
       const mp4s=[...(eh.matchAll(/https?:\/\/[^"'\\\s]+\.mp4[^"'\\\s]*/g))].map(m=>m[0]).filter(x=>!BAD.some(b=>x.includes(b)));
       if(vids.length||mp4s.length)return{src:vids.concat(mp4s)[0]};
+      const dd=await scanDrive(eh);if(dd)return dd;
     }catch(e){}
   }
+  const dd=await scanDrive(html);if(dd)return dd;
   const vs=[...doc.querySelectorAll('video source, video')].map(v=>v.getAttribute('src')||'').filter(s=>s.startsWith('http'));
   if(vs.length)return{src:vs[0]};
   throw new Error('เว็บนี้ขุดตรงไม่ได้ ลองเปิดต้นทางเอง');
@@ -129,7 +155,11 @@ async function resolveUrl(pageUrl){
 async function resolve(){
   try{
     const j=await resolveUrl(u());
-    if(j.yt)playYT(j.yt);else{play(j.src);LAST_DIRECT=j.src;
+    if(j.yt)playYT(j.yt);
+    else if(j.embed){playEmbed(j.embed);LAST_DIRECT=j.embed;
+      document.getElementById('directbox').style.display='flex';
+      document.getElementById('directurl').textContent=j.embed.slice(0,70)+'…';}
+    else{play(j.src);LAST_DIRECT=j.src;
       document.getElementById('directbox').style.display='flex';
       document.getElementById('directurl').textContent=j.src.slice(0,70)+'…';}
     if(!CUR.label||CUR.idx<0&&!EP.length)setNow(u(),-1);
@@ -176,12 +206,17 @@ async function searchHit(q){
     if(!g.children.length)g.innerHTML='<p class="note">ไม่เจอใน anime-hit</p>';
   }catch(e){document.getElementById('results').innerHTML='<p class="note">anime-hit โหลดไม่ได้</p>';}
 }
+const INFO_HOST=['tv.apple.com','primevideo.com','netflix.com','hotstar.com','disneyplus.com','wikipedia.org','imdb.com','facebook.com','instagram.com','twitter.com','x.com'];
+function isInfo(url){return INFO_HOST.some(h=>hostOf(url).endsWith(h));}
 function webLink(url,title){
   const w=document.getElementById('webres');
   const a=document.createElement('a');a.href='#';
-  a.textContent='['+hostOf(url)+'] '+title;a.title=url;
+  a.textContent=(isInfo(url)?'ℹ️ ':'['+hostOf(url)+'] ')+title;a.title=url;
   a.onclick=ev=>{ev.preventDefault();expandWeb(url,title);};
-  w.appendChild(a);
+  // ดันเว็บดูได้ขึ้นก่อน
+  if(isInfo(url))w.appendChild(a);
+  else w.insertBefore(a,w.firstChild);
+  return a;
 }
 async function expandWeb(url,title){
   const yid=ytId(url);
@@ -197,6 +232,11 @@ async function expandWeb(url,title){
   document.getElementById('wdcount').textContent='🔎 กำลังอ่านหน้าเว็บ...';
   document.getElementById('wdeps').innerHTML='';
   document.getElementById('wdsrc').onclick=()=>window.open(url,'_blank');
+  if(isInfo(url)){
+    document.getElementById('wdcount').textContent='ℹ️ หน้านี้เป็นเว็บทางการ/ข้อมูล — กด “เปิดต้นทาง” ดูโดยตรง';
+    document.getElementById('wdeps').innerHTML='';
+    setNow(title,-1);return;
+  }
   d.scrollIntoView();
   try{
     const html=await pGet(url);
