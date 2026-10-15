@@ -12,10 +12,6 @@ const SOURCES = {
   'fairy-top': 'https://fairyanime.net/scoretop/',
   'o37-new': 'https://037hddd.com/',
   'o37-movies': 'https://037hddd.com/movies',
-  'm285-new': 'https://hd.movie285.com/',
-  'm285-thai': 'https://hd.movie285.com/category/%e0%b8%ab%e0%b8%99%e0%b8%b1%e0%b8%87%e0%b9%84%e0%b8%97%e0%b8%a2/',
-  'm285-action': 'https://hd.movie285.com/category/action/',
-  'm285-animation': 'https://hd.movie285.com/category/animation/',
   'sd-new': 'https://seriesdet.com/',
   'sd-china': 'https://seriesdet.com/category/chinese-series/'
 };
@@ -173,16 +169,14 @@ async function searchWP(base, parser, q) {
 }
 
 async function searchAll(req, res, q) {
-  const [o37, m285, hit, sd] = await Promise.all([
+  const [o37, hit, sd] = await Promise.all([
     searchO37(q),
-    searchWP('https://hd.movie285.com/', parseM285, q),
     searchWP('https://hit-anime.com/', parseHit, q),
     searchWP('https://seriesdet.com/', parseSeriesdet, q)
   ]);
   return res.status(200).json({
     groups: [
       { site: '037hd', items: o37 },
-      { site: 'movie285', items: m285 },
       { site: 'hit-anime', items: hit },
       { site: 'seriesdet', items: sd }
     ]

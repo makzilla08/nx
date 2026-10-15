@@ -84,14 +84,10 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 </div>
 <div id="panel-movie" style="display:none">
 <h3>🎬 หนังน่าดู</h3>
-<p class="note" id="movienote">ขุดตรงจาก 037hd + movie285 ผ่านหลังบ้าน NX</p>
+<p class="note" id="movienote">ขุดตรงจาก 037hd ผ่านหลังบ้าน NX</p>
 <div class="tabs" id="movietabs">
-<button data-s="o37-new" class="on" onclick="siteBrowse('o37-new',this,'moviebrowse')">🆕 หนังมาใหม่ (037)</button>
-<button data-s="o37-movies" onclick="siteBrowse('o37-movies',this,'moviebrowse')">🎬 หนังทั้งหมด (037)</button>
-<button data-s="m285-new" onclick="siteBrowse('m285-new',this,'moviebrowse')">🆕 หนังใหม่ (285)</button>
-<button data-s="m285-thai" onclick="siteBrowse('m285-thai',this,'moviebrowse')">🇹🇭 หนังไทย (285)</button>
-<button data-s="m285-action" onclick="siteBrowse('m285-action',this,'moviebrowse')">💥 แอคชั่น (285)</button>
-<button data-s="m285-animation" onclick="siteBrowse('m285-animation',this,'moviebrowse')">✨ อนิเมชั่น (285)</button>
+<button data-s="o37-new" class="on" onclick="siteBrowse('o37-new',this,'moviebrowse')">🆕 หนังมาใหม่</button>
+<button data-s="o37-movies" onclick="siteBrowse('o37-movies',this,'moviebrowse')">🎬 หนังทั้งหมด</button>
 </div>
 <div class="bgrid" id="moviebrowse"></div>
 </div>
@@ -366,7 +362,7 @@ async function search(){
   siteSearch(q);
 }
 async function siteSearch(q){
-  const g=document.getElementById('results');g.innerHTML='<p class="note">🔎 กำลังค้นใน 037hd + movie285 + hit-anime + seriesdet...</p>';
+  const g=document.getElementById('results');g.innerHTML='<p class="note">🔎 กำลังค้นใน 037hd + hit-anime + seriesdet...</p>';
   document.getElementById('webhead').style.display='none';
   document.getElementById('webres').innerHTML='';
   try{
