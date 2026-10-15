@@ -142,12 +142,10 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 <footer>NX • Vercel + หลังบ้านตัวเอง • ดูบนมือถือ / Smart TV ได้ • ข้อมูลจากเว็บฟรี</footer>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 <script>
-const PROXIES=[{p:'https://cors.eu.org/',e:0},{p:'https://api.allorigins.win/raw?url=',e:1},{p:'https://api.cors.lol/?url=',e:0}],BASE='https://hit-anime.com';
+const PROXIES=[{p:'https://cors.eu.org/',e:0},{p:'https://api.allorigins.win/raw?url=',e:1},{p:'https://api.cors.lol/?url=',e:0}];
 function customProxy(){const u=(localStorage.getItem('nx_proxy')||'').trim();return u?[{p:u,e:0}]:[];}
 function chain(){return customProxy().concat(PROXIES);}
 const u=()=>document.getElementById('u').value.trim();
-const EXA_BUILTIN='';
-const exaKey=()=>(localStorage.getItem('exa_key')||'').trim()||EXA_BUILTIN;
 async function viaServer(url,opt){
   const r=await fetch('/api/fetch?url='+encodeURIComponent(url),{signal:(opt||{}).signal});
   if(!r.ok)throw new Error('server '+r.status);
@@ -324,12 +322,36 @@ function skipIntro(){const v=document.getElementById('v');v.currentTime=Math.min
 function preset(q){document.getElementById('q').value=q;search();}
 function platform(p){
   document.getElementById('q').value=p+' ซีรี่ส์น่าดู';
-  searchHit(p+' series');
-  searchWeb(p+' best series 2026 watch online ซับไทย');
+  siteSearch(p+' series');
 }
 async function search(){
   const q=document.getElementById('q').value.trim();if(!q)return;
-  searchHit(q);searchWeb(q);
+  siteSearch(q);
+}
+async function siteSearch(q){
+  const g=document.getElementById('results');g.innerHTML='<p class="note">🔎 กำลังค้นใน 037hd + movie285 + hit-anime + seriesdet...</p>';
+  document.getElementById('webhead').style.display='none';
+  document.getElementById('webres').innerHTML='';
+  try{
+    const r=await fetch('/api/sites?action=search&q='+encodeURIComponent(q));
+    if(!r.ok)throw new Error('server '+r.status);
+    const j=await r.json();g.innerHTML='';
+    let total=0;
+    (j.groups||[]).forEach(gr=>{
+      if(!(gr.items||[]).length)return;
+      total+=gr.items.length;
+      const h=document.createElement('h3');h.textContent='⬢ '+gr.site+' ('+gr.items.length+')';h.style.gridColumn='1/-1';g.appendChild(h);
+      gr.items.forEach(m=>{
+        const d=document.createElement('div');d.className='card';
+        const im=document.createElement('img');im.loading='lazy';im.src=m.cover||'';
+        const t=document.createElement('div');t.textContent=m.title;
+        const s=document.createElement('div');s.className='badge';s.textContent='⬢ '+gr.site+(m.badge?' • '+m.badge:'');
+        d.appendChild(im);d.appendChild(t);d.appendChild(s);d.onclick=()=>expandWeb(m.url,m.title);g.appendChild(d);
+      });
+    });
+    if(!total)g.innerHTML='<p class="note">ไม่เจอใน 4 เว็บ ลองคำอื่น</p>';
+    g.scrollIntoView();
+  }catch(e){g.innerHTML='<p class="note">ค้นหาล้มเหลว: '+e.message.slice(0,80)+'</p>';}
 }
 async function browse(action,btn){
   document.querySelectorAll('#browsetabs button').forEach(b=>b.classList.remove('on'));
@@ -387,25 +409,6 @@ async function siteBrowse(source,btn,grid){
     });
     if(!g.children.length)g.innerHTML='<p class="note">โหลดไม่ได้ ลองใหม่</p>';
   }catch(e){g.innerHTML='<p class="note">โหลดไม่ได้: '+e.message.slice(0,80)+'</p>';}
-}
-async function searchHit(q){
-  try{
-    const html=await pGet(BASE+'/?s='+encodeURIComponent(q));
-    const doc=new DOMParser().parseFromString(html,'text/html');
-    const g=document.getElementById('results');g.innerHTML='';const seen=new Set();
-    [...doc.querySelectorAll('article')].forEach(a=>{
-      const link=a.querySelector('a[rel="bookmark"]')||a.querySelector('a[href]');
-      if(!link)return;const url=link.href;
-      if(!url||url.includes('/video/')||seen.has(url))return;seen.add(url);
-      const img=a.querySelector('img'),title=link.getAttribute('title')||link.textContent.trim()||url;
-      const d=document.createElement('div');d.className='card';
-      const im=document.createElement('img');im.loading='lazy';im.src=img?(img.getAttribute('data-src')||img.src):'';
-      const t=document.createElement('div');t.textContent=title;
-      const s=document.createElement('div');s.className='badge';s.textContent='⬢ anime-hit';
-      d.appendChild(im);d.appendChild(t);d.appendChild(s);d.onclick=()=>loadEps(url);g.appendChild(d);
-    });
-    if(!g.children.length)g.innerHTML='<p class="note">ไม่เจอใน anime-hit</p>';
-  }catch(e){document.getElementById('results').innerHTML='<p class="note">anime-hit โหลดไม่ได้</p>';}
 }
 const INFO_HOST=['tv.apple.com','primevideo.com','netflix.com','hotstar.com','disneyplus.com','wikipedia.org','imdb.com','facebook.com','instagram.com','twitter.com','x.com'];
 function isInfo(url){return INFO_HOST.some(h=>hostOf(url).endsWith(h));}
@@ -471,21 +474,6 @@ function renderWEps(){
     b.onclick=()=>{[...box.children].forEach(x=>x.classList.remove('cur'));b.classList.add('cur');
       document.getElementById('u').value=e.url;setNow(EPTITLE+' — EP.'+e.ep,EP.indexOf(e));resolve();};
     box.appendChild(b);});
-}
-async function searchWeb(q){
-  const w=document.getElementById('webres');
-  document.getElementById('webhead').style.display='block';
-  w.innerHTML='<p class="note">🔎 กำลังค้นทั่วเน็ต...</p>';
-  // 1) ค้นผ่านหลังบ้าน Vercel (key อยู่ฝั่ง server)
-  try{
-    const r=await fetch('/api/search?q='+encodeURIComponent(q));
-    if(!r.ok)throw new Error('server '+r.status);
-    const j=await r.json();
-    w.innerHTML='';
-    (j.results||[]).forEach(s=>webLink(s.url,s.title||s.url));
-    if(!w.children.length)w.innerHTML='<p class="note">ไม่เจอผลเว็บ</p>';
-    return;
-  }catch(e){w.innerHTML='<p class="note">ค้นเว็บล้มเหลว: '+e.message.slice(0,120)+'</p>';}
 }
 async function loadEps(seriesUrl){
   const html=await pGet(seriesUrl),eps={};

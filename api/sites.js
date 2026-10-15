@@ -143,10 +143,59 @@ function parseFairy(html, base) {
   return out;
 }
 
+async function searchO37(q) {
+  try {
+    const ctl = new AbortController();
+    const to = setTimeout(() => ctl.abort(), 20000);
+    const r = await fetch('https://037hddd.com/api/search?q=' + encodeURIComponent(q) + '&limit=12',
+      { signal: ctl.signal, headers: { 'User-Agent': UA, 'Accept': 'application/json' } });
+    clearTimeout(to);
+    if (!r.ok) return [];
+    const j = await r.json();
+    const out = [];
+    for (const m of (j.movies || []).concat(j.series || [])) {
+      out.push({
+        url: 'https://037hddd.com' + m.url,
+        title: decodeEnt(m.title || ''),
+        cover: m.img ? 'https://037hddd.com' + m.img : '',
+        badge: [m.quality, m.rating ? '★' + m.rating : ''].filter(Boolean).join(' ')
+      });
+    }
+    return out;
+  } catch { return []; }
+}
+
+async function searchWP(base, parser, q) {
+  try {
+    const html = await fetchHtml(base + '?s=' + encodeURIComponent(q));
+    return parser(html, base).slice(0, 12);
+  } catch { return []; }
+}
+
+async function searchAll(req, res, q) {
+  const [o37, m285, hit, sd] = await Promise.all([
+    searchO37(q),
+    searchWP('https://hd.movie285.com/', parseM285, q),
+    searchWP('https://hit-anime.com/', parseHit, q),
+    searchWP('https://seriesdet.com/', parseSeriesdet, q)
+  ]);
+  return res.status(200).json({
+    groups: [
+      { site: '037hd', items: o37 },
+      { site: 'movie285', items: m285 },
+      { site: 'hit-anime', items: hit },
+      { site: 'seriesdet', items: sd }
+    ]
+  });
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  const { source = 'hit-latest', page = '1' } = req.query;
+  const { source = 'hit-latest', page = '1', action = '', q = '' } = req.query;
+  if (action === 'search' && q.trim()) {
+    return searchAll(req, res, q.trim());
+  }
   const base = SOURCES[source];
   if (!base) return res.status(400).json({ error: 'unknown source' });
   const pg = Math.max(1, +page || 1);
