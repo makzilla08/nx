@@ -88,13 +88,15 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 <footer>NX • static 100% • ดูบนมือถือ / Smart TV ได้ • ข้อมูลจากเว็บฟรี</footer>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 <script>
-const PROXY='https://cors.eu.org/',BASE='https://anime-hit.com';
+const PROXIES=['https://cors.eu.org/','https://api.allorigins.win/raw?url=','https://api.cors.lol/?url='],BASE='https://anime-hit.com';
 const u=()=>document.getElementById('u').value.trim();
 const EXA_BUILTIN='68183d99-ae4b-443f-865c-69023b33d2b7';
 const exaKey=()=>(localStorage.getItem('exa_key')||'').trim()||EXA_BUILTIN;
 if(localStorage.getItem('exa_key')){document.getElementById('exakey').value=localStorage.getItem('exa_key');document.getElementById('keystat').textContent='✅ จำแล้ว';}
 document.getElementById('exakey').addEventListener('keydown',e=>{if(e.key==='Enter'){localStorage.setItem('exa_key',e.target.value.trim());document.getElementById('keystat').textContent='✅ จำแล้ว';}});
-async function pGet(url){const r=await fetch(PROXY+url);if(!r.ok)throw new Error('โหลดไม่ได้ '+r.status);return r.text();}
+async function pFetch(url,opt){let last='?';for(const px of PROXIES){try{const r=await fetch(px+encodeURIComponent(url),opt||{});if(r.ok)return r;last='proxy '+r.status;}catch(e){last=e.message;}}throw new Error('โหลดไม่ได้ (proxy ล่มหมด: '+last+')');}
+async function pGet(url){return(await pFetch(url)).text();}
+async function pPost(url,body,headers){return(await pFetch(url,{method:'POST',headers,body})).json();}
 function hostOf(url){try{return new URL(url).hostname.replace(/^www\./,'')}catch(e){return''}}
 function play(src){
   document.getElementById('yt').style.display='none';const v=document.getElementById('v');v.style.display='block';
@@ -225,10 +227,10 @@ async function searchWeb(q){
   w.innerHTML='<p class="note">🔎 กำลังค้นทั่วเน็ต...</p>';
   // 2) Exa ผ่าน proxy (มี key ฝังในเครื่องแล้ว)
   try{
-    const r=await fetch(PROXY+'https://api.exa.ai/search',{method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':exaKey()},
-      body:JSON.stringify({query:q+' ดูฟรี ซับไทย พากย์ไทย',numResults:15})});
-    const j=await r.json();w.innerHTML='';
+    const j=await pPost('https://api.exa.ai/search',
+      JSON.stringify({query:q+' ดูฟรี ซับไทย พากย์ไทย',numResults:15}),
+      {'Content-Type':'application/json','x-api-key':exaKey()});
+    w.innerHTML='';
     (j.results||[]).forEach(s=>webLink(s.url,s.title||s.url));
     if(!w.children.length)w.innerHTML='<p class="note">ไม่เจอผลเว็บ (เช็ก key)</p>';
   }catch(e){w.innerHTML='<p class="note">ค้นเว็บล้มเหลว (เช็ก key/เน็ต)</p>';}
