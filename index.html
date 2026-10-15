@@ -42,7 +42,7 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 <button onclick="preset('ซีรี่ส์ไทย 2026')">🇹🇭 ซีรี่ส์ไทย</button>
 </div>
 <div class="srcs"><span class="note">แหล่งเบื้องหลัง:</span><span class="src">anime-hit</span><span class="src">037HD</span><span class="src">AnimePahe</span><span class="src">YouTube</span><span class="src">+ทั่วเน็ต</span></div>
-<div class="keyrow">🔑 Exa key (ผลแม่นขึ้น ไม่บังคับ — เก็บในเครื่องนี้เท่านั้น): <input type="password" id="exakey" placeholder="วาง key แล้ว Enter"> <span id="keystat"></span></div>
+<div class="keyrow">🔑 Exa key (มีค่า default สำหรับครอบครัว — ใส่ทับได้): <input type="password" id="exakey" placeholder="วาง key แล้ว Enter"> <span id="keystat"></span></div>
 </div>
 <div id="results" class="grid"></div>
 <h3 id="webhead" style="display:none">🌐 จากทั่วเน็ต</h3>
@@ -74,8 +74,9 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 <script>
 const PROXY='https://cors.eu.org/',BASE='https://anime-hit.com';
 const u=()=>document.getElementById('u').value.trim();
-const exaKey=()=>localStorage.getItem('exa_key')||'';
-if(exaKey()){document.getElementById('exakey').value=exaKey();document.getElementById('keystat').textContent='✅ จำแล้ว';}
+const EXA_BUILTIN='68183d99-ae4b-443f-865c-69023b33d2b7';
+const exaKey=()=>(localStorage.getItem('exa_key')||'').trim()||EXA_BUILTIN;
+if(localStorage.getItem('exa_key')){document.getElementById('exakey').value=localStorage.getItem('exa_key');document.getElementById('keystat').textContent='✅ จำแล้ว';}
 document.getElementById('exakey').addEventListener('keydown',e=>{if(e.key==='Enter'){localStorage.setItem('exa_key',e.target.value.trim());document.getElementById('keystat').textContent='✅ จำแล้ว';}});
 async function pGet(url){const r=await fetch(PROXY+url);if(!r.ok)throw new Error('โหลดไม่ได้ '+r.status);return r.text();}
 function hostOf(url){try{return new URL(url).hostname.replace(/^www\./,'')}catch(e){return''}}
@@ -163,8 +164,7 @@ async function searchWeb(q){
   const w=document.getElementById('webres');
   document.getElementById('webhead').style.display='block';
   w.innerHTML='<p class="note">🔎 กำลังค้นทั่วเน็ต...</p>';
-  // 2) Exa ผ่าน proxy ต้องมี key (Bing/Mojeek ใช้ไม่ได้ โดนบล็อก/ผลขยะ)
-  if(!exaKey()){w.innerHTML='<p class="note">💡 อยากเห็นผลจาก 037HD / AnimePahe / เว็บอื่น → สมัคร key ฟรีที่ exa.ai แล้ววางด้านบน (จำในเครื่องนี้เท่านั้น)</p>';return;}
+  // 2) Exa ผ่าน proxy (มี key ฝังในเครื่องแล้ว)
   try{
     const r=await fetch(PROXY+'https://api.exa.ai/search',{method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':exaKey()},
