@@ -184,6 +184,11 @@ function webLink(url,title){
   w.appendChild(a);
 }
 async function expandWeb(url,title){
+  const yid=ytId(url);
+  if(yid&&/youtube|youtu\.be/.test(url)){
+    document.getElementById('u').value=url;setNow(title,-1);playYT(yid);
+    document.getElementById('yt').scrollIntoView();return;
+  }
   EP=[];EPTITLE=title;
   document.getElementById('u').value=url;
   const d=document.getElementById('webdetail');d.style.display='block';
