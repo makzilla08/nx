@@ -53,6 +53,16 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 <div id="results" class="grid"></div>
 <h3 id="webhead" style="display:none">🌐 จากทั่วเน็ต</h3>
 <div id="webres" class="web"></div>
+<div id="webdetail" style="display:none">
+<div class="row" style="align-items:flex-start">
+<img id="wdimg" style="width:120px;height:170px;object-fit:cover;border-radius:10px;background:#222">
+<div style="flex:1"><h3 id="wdtitle" style="margin:0 0 6px"></h3>
+<p class="note" id="wdcount"></p>
+<div class="row"><button onclick="resolve()">▶ ดูเลย</button><button class="ghost" id="wdsrc">เปิดต้นทาง</button></div>
+</div></div>
+<div class="row"><button class="ghost" onclick="toggleOrder()" id="ordbtn2">เรียง: เก่า → ใหม่</button></div>
+<div id="wdeps" class="eps"></div>
+</div>
 <div id="epsec" style="display:none">
 <h3 id="eptitle"></h3>
 <div class="row"><button class="ghost" onclick="toggleOrder()" id="ordbtn">เรียง: เก่า → ใหม่</button><span class="note" id="epcount"></span></div>
@@ -168,8 +178,46 @@ function webLink(url,title){
   const w=document.getElementById('webres');
   const a=document.createElement('a');a.href='#';
   a.textContent='['+hostOf(url)+'] '+title;a.title=url;
-  a.onclick=ev=>{ev.preventDefault();EP=[];EPTITLE='';document.getElementById('u').value=url;setNow(title,-1);resolve();document.getElementById('v').scrollIntoView();};
+  a.onclick=ev=>{ev.preventDefault();expandWeb(url,title);};
   w.appendChild(a);
+}
+async function expandWeb(url,title){
+  EP=[];EPTITLE=title;
+  document.getElementById('u').value=url;
+  const d=document.getElementById('webdetail');d.style.display='block';
+  document.getElementById('wdtitle').textContent=title;
+  document.getElementById('wdimg').src='';
+  document.getElementById('wdcount').textContent='🔎 กำลังอ่านหน้าเว็บ...';
+  document.getElementById('wdeps').innerHTML='';
+  document.getElementById('wdsrc').onclick=()=>window.open(url,'_blank');
+  d.scrollIntoView();
+  try{
+    const html=await pGet(url);
+    const doc=new DOMParser().parseFromString(html,'text/html');
+    const og=doc.querySelector('meta[property="og:image"]');
+    if(og)document.getElementById('wdimg').src=og.content;
+    const eps={};
+    [...doc.querySelectorAll('a[href]')].forEach(a=>{
+      let href=a.getAttribute('href')||'';
+      if(href.startsWith('/'))href=new URL(href,url).href;
+      if(!href.startsWith('http'))return;
+      const m=href.match(/(?:-ep-|[\/_-]ep[-_]?|episode[-_]?|ตอนที่[-_ ]?)(\d{1,3})/i);
+      if(m&&+m[1]<2000&&!eps[+m[1]])eps[+m[1]]=href;
+    });
+    EP=Object.keys(eps).map(Number).sort((a,b)=>a-b).map(n=>({ep:n,url:eps[n]}));
+    ASC=true;renderWEps();
+    document.getElementById('wdcount').textContent=EP.length?('พบ '+EP.length+' ตอน — กดเพื่อดูแบบคลีน'):'หน้านี้ไม่มีลิสต์ตอน กด “ดูเลย” เพื่อเปิดตอนนี้';
+  }catch(e){document.getElementById('wdcount').textContent='อ่านหน้าเว็บไม่ได้ กด “ดูเลย” เพื่อลองเปิดตรง';}
+  setNow(title,-1);
+}
+function renderWEps(){
+  const list=ASC?EP:[...EP].reverse();
+  document.getElementById('ordbtn2').textContent=ASC?'เรียง: เก่า → ใหม่':'เรียง: ใหม่ → เก่า';
+  const box=document.getElementById('wdeps');box.innerHTML='';
+  list.forEach(e=>{const b=document.createElement('button');b.textContent='EP.'+e.ep;
+    b.onclick=()=>{[...box.children].forEach(x=>x.classList.remove('cur'));b.classList.add('cur');
+      document.getElementById('u').value=e.url;setNow(EPTITLE+' — EP.'+e.ep,EP.indexOf(e));resolve();};
+    box.appendChild(b);});
 }
 async function searchWeb(q){
   const w=document.getElementById('webres');
