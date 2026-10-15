@@ -43,17 +43,30 @@ export default async function handler(req, res) {
     fwdBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body || {});
   }
   try {
-    const ctl = new AbortController();
-    const to = setTimeout(() => ctl.abort(), 25000);
-    const r = await fetch(target, {
-      method: isPost ? 'POST' : 'GET',
-      body: fwdBody,
-      signal: ctl.signal,
-      redirect: 'follow',
-      headers: { ...fwdHeaders, ...(referer ? { Referer: referer } : {}) }
-    });
-    clearTimeout(to);
-    if (!r.ok) return res.status(r.status).json({ error: 'upstream ' + r.status });
+    const baseHeaders = { ...fwdHeaders, ...(referer ? { Referer: referer } : {}) };
+    const tries = [{ url: target, enc: false },
+      { url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(target), enc: true },
+      { url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(target), enc: true },
+      { url: 'https://corsproxy.io/?url=' + encodeURIComponent(target), enc: true }];
+    let last = '', r = null;
+    for (const t of tries) {
+      if (isPost && t.enc) continue;
+      try {
+        const ctl = new AbortController();
+        const to = setTimeout(() => ctl.abort(), 25000);
+        const rr = await fetch(t.url, {
+          method: isPost ? 'POST' : 'GET',
+          body: fwdBody,
+          signal: ctl.signal,
+          redirect: 'follow',
+          headers: t.enc ? { 'User-Agent': UA } : baseHeaders
+        });
+        clearTimeout(to);
+        if (!rr.ok) { last = 'http ' + rr.status; continue; }
+        r = rr; break;
+      } catch (e) { last = String(e.message || e).slice(0, 60); }
+    }
+    if (!r) return res.status(502).json({ error: last || 'fetch failed' });
     const buf = Buffer.from(await r.arrayBuffer()).subarray(0, MAX_BYTES);
     res.setHeader('Content-Type', r.headers.get('content-type') || 'text/html; charset=utf-8');
     return res.status(200).send(buf);

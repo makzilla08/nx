@@ -186,9 +186,24 @@ async function searchAll(req, res, q) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  const { source = 'hit-latest', page = '1', action = '', q = '' } = req.query;
+  const { source = 'hit-latest', page = '1', action = '', q = '', custom = '', parser = '' } = req.query;
   if (action === 'search' && q.trim()) {
     return searchAll(req, res, q.trim());
+  }
+  if (custom) {
+    // custom URL browse — only our allowlisted hosts
+    const allow = { 'hit-anime.com': parseHit, 'seriesdet.com': parseSeriesdet, '037hddd.com': parseO37, 'hd.movie285.com': parseM285 };
+    let u;
+    try { u = new URL(custom); } catch { return res.status(400).json({ error: 'bad url' }); }
+    const host = u.hostname.replace(/^www\./, '');
+    const fn = allow[host] && (parser ? { hit: parseHit, sd: parseSeriesdet, o37: parseO37, m285: parseM285 }[parser] : allow[host]);
+    if (!fn) return res.status(403).json({ error: 'host not allowed' });
+    try {
+      const html = await fetchHtml(custom);
+      return res.status(200).json({ items: fn(html, u.origin + '/') });
+    } catch (e) {
+      return res.status(502).json({ error: String(e.message || e).slice(0, 120) });
+    }
   }
   const base = SOURCES[source];
   if (!base) return res.status(400).json({ error: 'unknown source' });

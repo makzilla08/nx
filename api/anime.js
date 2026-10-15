@@ -2,9 +2,9 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 const EP = 'https://graphql.anilist.co';
 
 const LIST_Q = `
-query ($page: Int, $perPage: Int, $sort: [MediaSort], $search: String, $genre: String, $season: MediaSeason, $seasonYear: Int) {
+  query ($page: Int, $perPage: Int, $sort: [MediaSort], $search: String, $genre: String, $season: MediaSeason, $seasonYear: Int, $country: CountryCode) {
   Page(page: $page, perPage: $perPage) {
-    media(type: ANIME, sort: $sort, search: $search, genre: $genre, season: $season, seasonYear: $seasonYear, isAdult: false) {
+    media(type: ANIME, sort: $sort, search: $search, genre: $genre, season: $season, seasonYear: $seasonYear, countryOfOrigin: $country, isAdult: false) {
       id idMal
       title { romaji english native }
       coverImage { large medium color }
@@ -40,7 +40,7 @@ const pickTitle = t => t.english || t.romaji || t.native || '';
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  const { action = 'trending', q = '', id = '', genre = '', page = '1' } = req.query;
+  const { action = 'trending', q = '', id = '', genre = '', page = '1', year = '', country = '' } = req.query;
   let query, vars;
   if (action === 'info' && id) {
     query = INFO_Q; vars = { id: +id };
@@ -57,6 +57,9 @@ export default async function handler(req, res) {
     }
     else vars.sort = ['TRENDING_DESC'];
     if (genre) vars.genre = genre;
+    if (year && +year) vars.seasonYear = +year;
+    if (country) vars.country = country;
+    vars.genre = vars.genre || undefined;
   }
   try {
     const ctl = new AbortController();

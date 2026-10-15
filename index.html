@@ -28,6 +28,10 @@ video{width:100%;background:#000;margin-top:12px;border-radius:12px}
 .eps button{padding:8px 12px;min-width:64px;background:#222}.eps button.cur{background:#0a7}
 .nowbar{display:flex;align-items:center;gap:8px;background:#10251a;border:1px solid #0a7;border-radius:10px;padding:8px 12px;margin-top:8px}
 .nowbar b{flex:1}
+.frow{margin:8px 0;font-size:13px}.flabel{color:#8a94a6;margin-right:6px}
+.frow button{padding:6px 10px;font-size:12px;background:#1a2333;font-weight:400;margin:2px}
+.frow button.on{background:#1f6feb}
+select{padding:8px;border-radius:8px;border:1px solid #333;background:#161c28;color:#eee;max-width:100%}
 .keyrow{margin-top:10px;font-size:12px;color:#8a94a6}input[type=password]{padding:8px;border-radius:8px;border:1px solid #333;background:#161c28;color:#eee;width:280px}
 h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color:#5a6778}
 </style></head>
@@ -63,40 +67,57 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 <button data-p="series" onclick="switchPanel('series',this)">📺 ซีรี่ส์</button>
 </div>
 <div id="panel-anime">
-<h3>🎌 เลือกอนิเมะจากฐานข้อมูล</h3>
+<h3>🎌 อนิเมะ (AniList)</h3>
 <div class="tabs" id="browsetabs">
-<button data-a="trending" class="on" onclick="browse('trending',this)">🔥 กำลังฮิต</button>
-<button data-a="popular" onclick="browse('popular',this)">⭐ ยอดนิยม</button>
-<button data-a="top" onclick="browse('top',this)">🏆 คะแนนสูงสุด</button>
-<button data-a="seasonal" onclick="browse('seasonal',this)">📅 ซีซั่นนี้</button>
+<button data-a="trending" class="on" onclick="setA('mode','trending',this)">🔥 กำลังฮิต</button>
+<button data-a="popular" onclick="setA('mode','popular',this)">⭐ ยอดนิยม</button>
+<button data-a="top" onclick="setA('mode','top',this)">🏆 คะแนนสูงสุด</button>
+<button data-a="seasonal" onclick="setA('mode','seasonal',this)">📅 ซีซั่นนี้</button>
 </div>
+<div class="frow"><span class="flabel">แหล่ง:</span><span id="acountry"></span></div>
+<div class="frow"><span class="flabel">ปี:</span><span id="ayears"></span></div>
+<div class="frow"><span class="flabel">ตัวอักษร:</span><span id="aletters"></span></div>
+<div class="frow"><span class="flabel">ประเภท:</span> <select id="agenre" onchange="setA('genre',this.value)"></select></div>
 <div class="adetail" id="adetail"></div>
 <div class="bgrid" id="browse"></div>
-<h3>🇹🇭 เว็บซับไทย / พากย์ไทย</h3>
+<h3>🇹🇭 hit-anime</h3>
 <div class="tabs" id="sitetabs">
-<button data-s="hit-latest" class="on" onclick="siteBrowse('hit-latest',this)">🆕 อัพเดท</button>
-<button data-s="hit-sub" onclick="siteBrowse('hit-sub',this)">💬 ซับไทย</button>
-<button data-s="hit-dub" onclick="siteBrowse('hit-dub',this)">🔊 พากย์ไทย</button>
-<button data-s="hit-china" onclick="siteBrowse('hit-china',this)">🐉 จีน/เกาหลี</button>
-<button data-s="hit-movie" onclick="siteBrowse('hit-movie',this)">🎬 เดอะมูฟวี่</button>
+<button data-s="hit-latest" class="on" onclick="setH('cat','hit-latest',this)">🆕 อัพเดท</button>
+<button data-s="hit-sub" onclick="setH('cat','hit-sub',this)">💬 ซับไทย</button>
+<button data-s="hit-dub" onclick="setH('cat','hit-dub',this)">🔊 พากย์ไทย</button>
+<button data-s="hit-china" onclick="setH('cat','hit-china',this)">🐉 จีน/เกาหลี</button>
+<button data-s="hit-movie" onclick="setH('cat','hit-movie',this)">🎬 เดอะมูฟวี่</button>
+<button data-s="hit-onair" onclick="setH('cat','hit-onair',this)">📡 กำลังฉาย</button>
+<button data-s="hit-finished" onclick="setH('cat','hit-finished',this)">✅ จบแล้ว</button>
 </div>
+<div class="frow"><span class="flabel">ประเภท:</span><span id="hgenres"></span></div>
+<div class="frow"><span class="flabel">ตัวอักษร:</span><span id="hletters"></span></div>
 <div class="bgrid" id="sitebrowse"></div>
 </div>
 <div id="panel-movie" style="display:none">
-<h3>🎬 หนังน่าดู</h3>
-<p class="note" id="movienote">ขุดตรงจาก 037hd ผ่านหลังบ้าน NX</p>
-<div class="tabs" id="movietabs">
-<button data-s="o37-new" class="on" onclick="siteBrowse('o37-new',this,'moviebrowse')">🆕 หนังมาใหม่</button>
-<button data-s="o37-movies" onclick="siteBrowse('o37-movies',this,'moviebrowse')">🎬 หนังทั้งหมด</button>
-</div>
+<h3>🎬 หนัง (037hd)</h3>
+<div class="frow"><span class="flabel">ประเภท:</span><span id="mgenre"></span></div>
+<div class="frow"><span class="flabel">ประเทศ:</span><span id="mcountry"></span></div>
+<div class="frow"><span class="flabel">ปี:</span><span id="myears"></span></div>
+<div class="frow"><span class="flabel">เสียง:</span><span id="mtype"></span></div>
+<div class="frow"><span class="flabel">ตัวอักษร:</span><span id="mletters"></span></div>
 <div class="bgrid" id="moviebrowse"></div>
 </div>
 <div id="panel-series" style="display:none">
-<h3>📺 ซีรี่ส์น่าดู</h3>
-<p class="note" id="seriesnote">ขุดตรงจาก seriesdet ผ่านหลังบ้าน NX</p>
-<div class="tabs" id="seriestabs">
-<button data-s="sd-new" class="on" onclick="siteBrowse('sd-new',this,'seriesbrowse')">🆕 อัพเดทล่าสุด</button>
-<button data-s="sd-china" onclick="siteBrowse('sd-china',this,'seriesbrowse')">🐉 ซีรี่ส์จีน</button>
+<h3>📺 ซีรี่ส์</h3>
+<div class="frow"><span class="flabel">แหล่ง:</span><span id="ssrc"></span></div>
+<div id="s_o37">
+<div class="frow"><span class="flabel">ประเภท:</span><span id="sgenre"></span></div>
+<div class="frow"><span class="flabel">ประเทศ:</span><span id="scountry"></span></div>
+<div class="frow"><span class="flabel">ปี:</span><span id="syears"></span></div>
+<div class="frow"><span class="flabel">เสียง:</span><span id="stype"></span></div>
+<div class="frow"><span class="flabel">ตัวอักษร:</span><span id="sletters"></span></div>
+</div>
+<div id="s_sd">
+<div class="frow"><span class="flabel">ประเทศ:</span><span id="sdcats"></span></div>
+<div class="frow"><span class="flabel">เสียง:</span><span id="sdvoice"></span></div>
+<div class="frow"><span class="flabel">ปี:</span><span id="sdyears"></span></div>
+<div class="frow"><span class="flabel">ตัวอักษร:</span><span id="sdletters"></span></div>
 </div>
 <div class="bgrid" id="seriesbrowse"></div>
 </div>
@@ -296,6 +317,7 @@ async function resolveO37Watch(pageUrl){
 async function resolveUrl(pageUrl){
   if(/\.(m3u8|mp4)(\?|$)/.test(pageUrl))return{src:pageUrl};
   if(/youtube|youtu\.be/.test(pageUrl)){const id=ytId(pageUrl);if(id)return{yt:id};}
+  if(/hit-anime\.com\/video\//.test(pageUrl)){try{return await resolveHitVideo(pageUrl);}catch(e){if(e.message!=='no-hit')throw e;}}
   if(/037hddd\.com\/watch\//.test(pageUrl)){try{return await resolveO37Watch(pageUrl);}catch(e){if(e.message!=='no-o37')throw e;}}
   if(pageUrl.includes('streamhls_ticket=1')){try{return await resolveTicket(pageUrl);}catch(e){if(e.message!=='no-ticket')throw e;}}
   if(/\/player\/source\/v1\./.test(pageUrl)){
@@ -335,7 +357,7 @@ async function resolve(){
     else if(j.embed){playEmbed(j.embed);LAST_DIRECT=j.embed;
       document.getElementById('directbox').style.display='flex';
       document.getElementById('directurl').textContent=j.embed.slice(0,70)+'…';}
-    else{let ref='';try{ref=new URL(j.src).origin}catch(e){}
+    else{let ref='';try{ref=j.ref||new URL(j.src).origin}catch(e){}
       play(j.src,ref);LAST_DIRECT=j.src;
       document.getElementById('directbox').style.display='flex';
       document.getElementById('directurl').textContent=j.src.slice(0,70)+'…';}
@@ -388,12 +410,56 @@ async function siteSearch(q){
     g.scrollIntoView();
   }catch(e){g.innerHTML='<p class="note">ค้นหาล้มเหลว: '+e.message.slice(0,80)+'</p>';}
 }
-async function browse(action,btn){
-  document.querySelectorAll('#browsetabs button').forEach(b=>b.classList.remove('on'));
-  if(btn)btn.classList.add('on');
+const YEARS=[];for(let y=2026;y>=2010;y--)YEARS.push(String(y));
+const LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const TH_LETTERS='กขฃคฅฆงจฉชซฌญฎฏฐฑฒณดตถทธนบปผฝพฟภมยรลวศษสหฬอฮ'.split('');
+const ANIME_G=['Action','Adventure','Comedy','Drama','Fantasy','Horror','Mystery','Romance','Sci-Fi','Slice of Life','Sports','Supernatural','Suspense','Gourmet','Award Winning'];
+const HIT_G=['action','adventure','comedy','demons','drama','ecchi','fantasy','harem','historical','isekai','martial-arts','mecha','music','mystery','psychological','romance','school','sci-fi','seinen','shoujo','shounen','slice-of-life','sports','super-power','supernatural'];
+const HIT_CAT={'hit-latest':'https://hit-anime.com/','hit-sub':'https://hit-anime.com/category/subthai/','hit-dub':'https://hit-anime.com/category/anime-thai/','hit-china':'https://hit-anime.com/category/anime-chinese-korea/','hit-movie':'https://hit-anime.com/category/themovie/','hit-onair':'https://hit-anime.com/air/onair/','hit-finished':'https://hit-anime.com/air/finished/'};
+const MOV_G=['action','comedy','drama','horror','romance','documentary','war','thai'];
+const MOV_C=['ฝรั่ง','สากล','เอเชีย','ไทย'];
+const MOV_T=['พากย์ไทย','ซับไทย'];
+const SD_CAT={latest:'https://seriesdet.com/',china:'https://seriesdet.com/category/chinese-series/',korea:'https://seriesdet.com/category/ซีรี่ย์เกาหลี/',west:'https://seriesdet.com/category/ซีรี่ย์ฝรั่ง/',thai:'https://seriesdet.com/category/ซีรี่ย์ไทย/'};
+const SD_SUB={china:['chinese-series-ซับไทย','chinese-series-พากย์ไทย'],korea:['ซีรี่ย์เกาหลี-ซับไทย','ซีรี่ย์เกาหลี-พากย์ไทย'],west:['ซีรี่ย์ฝรั่ง-ซับไทย','ซีรี่ย์ฝรั่ง-พากย์ไทย']};
+let AN={mode:'trending',country:'',year:'',letter:'',genre:''};
+let HH={cat:'hit-latest',genre:'',letter:''};
+let MV={genre:'',country:'',year:'',type:'',letter:''};
+let SR={src:'o37',genre:'',country:'',year:'',type:'',letter:'',sdcat:'latest',sdvoice:'',sdyear:'',sdletter:''};
+function mkRow(el,items,cur,fn,allLabel){
+  const box=document.getElementById(el);box.innerHTML='';
+  const mk=(v,label)=>{const b=document.createElement('button');b.textContent=label||v;
+    if((cur||'')===(v||''))b.classList.add('on');b.onclick=()=>fn(v);box.appendChild(b);};
+  if(allLabel!==null)mk('','ทั้งหมด');
+  items.forEach(v=>mk(v));
+}
+function mkLetters(el,cur,fn){
+  const box=document.getElementById(el);box.innerHTML='';
+  const mk=(v)=>{const b=document.createElement('button');b.textContent=v;
+    if(cur===v)b.classList.add('on');b.onclick=()=>fn(cur===v?'':v);box.appendChild(b);};
+  const all=document.createElement('button');all.textContent='ทั้งหมด';
+  if(!cur)all.classList.add('on');all.onclick=()=>fn('');box.appendChild(all);
+  LETTERS.concat(TH_LETTERS).forEach(mk);
+}
+function setA(k,v){AN[k]=v;renderARows();browseAni();}
+function renderARows(){
+  mkRow('acountry',[['JP','🇯🇵 ญี่ปุ่น'],['CN','🇨🇳 จีน'],['KR','🇰🇷 เกาหลี'],['US','🇺🇸 ฝรั่ง']].map(x=>x[0]),AN.country,v=>setA('country',v),null);
+  document.querySelectorAll('#acountry button').forEach((b,i)=>{b.textContent=[['ทั้งหมด'],['🇯🇵 ญี่ปุ่น'],['🇨🇳 จีน'],['🇰🇷 เกาหลี'],['🇺🇸 ฝรั่ง']][i][0];});
+  mkRow('ayears',YEARS,AN.year,v=>setA('year',v),null);
+  mkLetters('aletters',AN.letter,v=>setA('letter',v));
+  const sel=document.getElementById('agenre');
+  if(!sel.options.length){sel.innerHTML='<option value="">ทุกประเภท</option>'+ANIME_G.map(g=>'<option>'+g+'</option>').join('');}
+  sel.value=AN.genre;
+}
+async function browseAni(){
   const g=document.getElementById('browse');g.innerHTML='<p class="note">⏳ กำลังโหลด...</p>';
   try{
-    const r=await fetch('/api/anime?action='+action);if(!r.ok)throw new Error('server '+r.status);
+    let url='/api/anime?action='+AN.mode;
+    if(AN.genre)url+='&genre='+encodeURIComponent(AN.genre);
+    if(AN.year)url+='&year='+AN.year;
+    if(AN.country)url+='&country='+AN.country;
+    if(AN.letter)url+='&q='+encodeURIComponent(AN.letter);
+    if(AN.letter&&AN.mode==='trending')url=url.replace('action=trending','action=search');
+    const r=await fetch(url);if(!r.ok)throw new Error('server '+r.status);
     const j=await r.json();g.innerHTML='';
     (j.items||[]).forEach(m=>{
       const d=document.createElement('div');d.className='bcard';
@@ -402,6 +468,122 @@ async function browse(action,btn){
     });
     if(!g.children.length)g.innerHTML='<p class="note">โหลดไม่ได้ ลองใหม่</p>';
   }catch(e){g.innerHTML='<p class="note">โหลดไม่ได้: '+e.message.slice(0,80)+'</p>';}
+}
+function setH(k,v){HH[k]=v;renderHRows();hitBrowse();}
+function renderHRows(){
+  document.querySelectorAll('#sitetabs button').forEach(b=>b.classList.toggle('on',b.dataset.s===HH.cat&&!HH.genre&&!HH.letter));
+  mkRow('hgenres',HIT_G,HH.genre,v=>setH('genre',v),null);
+  mkLetters('hletters',HH.letter,v=>setH('letter',v));
+}
+async function hitBrowse(){
+  const g=document.getElementById('sitebrowse');g.innerHTML='<p class="note">⏳ กำลังโหลด...</p>';
+  try{
+    let url;
+    if(HH.letter)url='/api/sites?custom='+encodeURIComponent('https://hit-anime.com/?s='+HH.letter)+'&parser=hit';
+    else if(HH.genre)url='/api/sites?custom='+encodeURIComponent('https://hit-anime.com/genres/'+HH.genre+'/')+'&parser=hit';
+    else url='/api/sites?source='+HH.cat;
+    const r=await fetch(url);if(!r.ok)throw new Error('server '+r.status);
+    const j=await r.json();g.innerHTML='';
+    (j.items||[]).forEach(m=>{
+      const d=document.createElement('div');d.className='bcard';
+      d.innerHTML='<img loading="lazy" src="'+m.cover+'"><div class="t">'+m.title+'</div><div class="s">'+(m.badge||m.src||'')+'</div>';
+      d.onclick=()=>expandWeb(m.url,m.title);g.appendChild(d);
+    });
+    if(!g.children.length)g.innerHTML='<p class="note">โหลดไม่ได้ ลองใหม่</p>';
+  }catch(e){g.innerHTML='<p class="note">โหลดไม่ได้: '+e.message.slice(0,80)+'</p>';}
+}
+function setM(k,v){MV[k]=v;renderMRows();movieBrowse();}
+function renderMRows(){
+  mkRow('mgenre',MOV_G,MV.genre,v=>setM('genre',v),null);
+  mkRow('mcountry',MOV_C,MV.country,v=>setM('country',v),null);
+  mkRow('myears',YEARS,MV.year,v=>setM('year',v),null);
+  mkRow('mtype',MOV_T,MV.type,v=>setM('type',v),null);
+  mkLetters('mletters',MV.letter,v=>setM('letter',v));
+}
+async function movieBrowse(){
+  const g=document.getElementById('moviebrowse');g.innerHTML='<p class="note">⏳ กำลังโหลด...</p>';
+  try{
+    let url='/api/movies?limit=24';
+    if(MV.genre)url+='&genre='+MV.genre;
+    if(MV.country)url+='&country='+encodeURIComponent(MV.country);
+    if(MV.year)url+='&year='+MV.year;
+    if(MV.type)url+='&type='+encodeURIComponent(MV.type);
+    if(MV.letter)url+='&letter='+encodeURIComponent(MV.letter);
+    const r=await fetch(url);if(!r.ok)throw new Error('server '+r.status);
+    const j=await r.json();g.innerHTML='';
+    (j.items||[]).forEach(m=>{
+      const d=document.createElement('div');d.className='bcard';
+      d.innerHTML='<img loading="lazy" src="'+m.cover+'"><div class="t">'+m.title+'</div><div class="s">'+(m.badge||'')+'</div>';
+      d.onclick=()=>expandWeb(m.url,m.title);g.appendChild(d);
+    });
+    if(!g.children.length)g.innerHTML='<p class="note">ไม่เจอ ลองเปลี่ยนตัวกรอง</p>';
+  }catch(e){g.innerHTML='<p class="note">โหลดไม่ได้: '+e.message.slice(0,80)+'</p>';}
+}
+function setS(k,v){SR[k]=v;renderSRows();seriesBrowse();}
+function renderSRows(){
+  mkRow('ssrc',[['o37','037hd'],['sd','seriesdet']].map(x=>x[0]),SR.src,()=>{},null);
+  document.querySelectorAll('#ssrc button').forEach((b,i)=>{b.textContent=[['037hd'],['seriesdet']][i][0];b.onclick=()=>setS('src',['o37','sd'][i]);});
+  document.getElementById('s_o37').style.display=SR.src==='o37'?'block':'none';
+  document.getElementById('s_sd').style.display=SR.src==='sd'?'block':'none';
+  if(SR.src==='o37'){
+    mkRow('sgenre',MOV_G,SR.genre,v=>setS('genre',v),null);
+    mkRow('scountry',MOV_C,SR.country,v=>setS('country',v),null);
+    mkRow('syears',YEARS,SR.year,v=>setS('year',v),null);
+    mkRow('stype',MOV_T,SR.type,v=>setS('type',v),null);
+    mkLetters('sletters',SR.letter,v=>setS('letter',v));
+  }else{
+    mkRow('sdcats',Object.keys(SD_CAT),SR.sdcat,v=>setS('sdcat',v),null);
+    document.querySelectorAll('#sdcats button').forEach((b,i)=>{b.textContent=[['ทั้งหมด (อัพเดท)'],['🐉 จีน'],['🇰🇷 เกาหลี'],['🌍 ฝรั่ง'],['🇹🇭 ไทย']][i][0];});
+    const sub=SD_SUB[{china:'china',korea:'korea',west:'west'}[SR.sdcat]]||[];
+    mkRow('sdvoice',sub,SR.sdvoice,v=>setS('sdvoice',v),null);
+    document.querySelectorAll('#sdvoice button').forEach((b,i)=>{const L=[['ทั้งหมด']];sub.forEach(s=>L.push([/ซับไทย/.test(s)?'💬 ซับไทย':'🔊 พากย์ไทย']));b.textContent=L[i][0];});
+    mkRow('sdyears',YEARS.slice(0,11),SR.sdyear,v=>setS('sdyear',v),null);
+    mkLetters('sdletters',SR.sdletter,v=>setS('sdletter',v));
+  }
+}
+async function seriesBrowse(){
+  const g=document.getElementById('seriesbrowse');g.innerHTML='<p class="note">⏳ กำลังโหลด...</p>';
+  try{
+    let url;
+    if(SR.src==='o37'){
+      url='/api/movies?kind=series&limit=24';
+      if(SR.genre)url+='&genre='+SR.genre;
+      if(SR.country)url+='&country='+encodeURIComponent(SR.country);
+      if(SR.year)url+='&year='+SR.year;
+      if(SR.type)url+='&type='+encodeURIComponent(SR.type);
+      if(SR.letter)url+='&letter='+encodeURIComponent(SR.letter);
+    }else if(SR.sdletter){
+      url='/api/sites?custom='+encodeURIComponent('https://seriesdet.com/?s='+SR.sdletter)+'&parser=sd';
+    }else if(SR.sdyear){
+      url='/api/sites?custom='+encodeURIComponent('https://seriesdet.com/'+SR.sdyear+'/')+'&parser=sd';
+    }else{
+      let base=SD_CAT[SR.sdcat]||SD_CAT.latest;
+      if(SR.sdvoice&&SR.sdcat!=='latest'&&SR.sdcat!=='thai')base+=SR.sdvoice+'/';
+      url='/api/sites?custom='+encodeURIComponent(base)+'&parser=sd';
+    }
+    const r=await fetch(url);if(!r.ok)throw new Error('server '+r.status);
+    const j=await r.json();g.innerHTML='';
+    (j.items||[]).forEach(m=>{
+      const d=document.createElement('div');d.className='bcard';
+      d.innerHTML='<img loading="lazy" src="'+m.cover+'"><div class="t">'+m.title+'</div><div class="s">'+(m.badge||m.src||'')+'</div>';
+      d.onclick=()=>expandWeb(m.url,m.title);g.appendChild(d);
+    });
+    if(!g.children.length)g.innerHTML='<p class="note">ไม่เจอ ลองเปลี่ยนตัวกรอง</p>';
+  }catch(e){g.innerHTML='<p class="note">โหลดไม่ได้: '+e.message.slice(0,80)+'</p>';}
+}
+async function resolveHitVideo(pageUrl){
+  const html=await pGet(pageUrl);
+  const frames=[...html.matchAll(/<iframe[^>]*src\s*=\s*"?([^"'\s>]+)/g)].map(m=>m[1]);
+  for(const f0 of frames){
+    const f=f0.startsWith('//')?'https:'+f0:f0;
+    if(!/team-indy/.test(f))continue;
+    try{
+      const eh=await pGet(f,pageUrl);
+      const vids=[...(eh.matchAll(/https?:\/\/[^"'\\\s]+\.m3u8[^"'\\\s]*/g))].map(m=>m[0]).filter(x=>!BAD.some(b=>x.includes(b)));
+      if(vids.length)return{src:vids[0],ref:new URL(f).origin};
+    }catch(e){}
+  }
+  throw new Error('no-hit');
 }
 async function animeInfo(id,fallbackTitle){
   const d=document.getElementById('adetail');d.style.display='block';
@@ -427,23 +609,6 @@ function switchPanel(p,btn){
   document.getElementById('panel-anime').style.display=p==='anime'?'block':'none';
   document.getElementById('panel-movie').style.display=p==='movie'?'block':'none';
   document.getElementById('panel-series').style.display=p==='series'?'block':'none';
-}
-async function siteBrowse(source,btn,grid){
-  grid=grid||'sitebrowse';
-  const tabs=btn&&btn.parentElement?btn.parentElement.id:'sitetabs';
-  document.querySelectorAll('#'+tabs+' button').forEach(b=>b.classList.remove('on'));
-  if(btn)btn.classList.add('on');
-  const g=document.getElementById(grid);g.innerHTML='<p class="note">⏳ กำลังโหลด...</p>';
-  try{
-    const r=await fetch('/api/sites?source='+source);if(!r.ok)throw new Error('server '+r.status);
-    const j=await r.json();g.innerHTML='';
-    (j.items||[]).forEach(m=>{
-      const d=document.createElement('div');d.className='bcard';
-      d.innerHTML='<img loading="lazy" src="'+m.cover+'"><div class="t">'+m.title+'</div><div class="s">'+(m.badge||m.src||'')+'</div>';
-      d.onclick=()=>expandWeb(m.url,m.title);g.appendChild(d);
-    });
-    if(!g.children.length)g.innerHTML='<p class="note">โหลดไม่ได้ ลองใหม่</p>';
-  }catch(e){g.innerHTML='<p class="note">โหลดไม่ได้: '+e.message.slice(0,80)+'</p>';}
 }
 const INFO_HOST=['tv.apple.com','primevideo.com','netflix.com','hotstar.com','disneyplus.com','wikipedia.org','imdb.com','facebook.com','instagram.com','twitter.com','x.com'];
 function isInfo(url){return INFO_HOST.some(h=>hostOf(url).endsWith(h));}
@@ -530,6 +695,8 @@ function renderEps(){
 }
 document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
 document.getElementById('u').addEventListener('keydown',e=>{if(e.key==='Enter')resolve()});
-browse('trending');
-siteBrowse('hit-latest');
+renderARows();browseAni();
+renderHRows();hitBrowse();
+renderMRows();movieBrowse();
+renderSRows();seriesBrowse();
 </script></body></html>
