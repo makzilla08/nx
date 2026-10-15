@@ -132,13 +132,16 @@ async function scanDrive(html){
 }
 async function resolve037(pageUrl){
   const html=await pGet(pageUrl);
-  const tickets=[...html.matchAll(/\?streamhls_ticket=1[^"'\\s]*?target=([A-Za-z0-9+/=]+)/g)].map(m=>m[1]);
+  const tickets=[...html.matchAll(/((?:https?:\/\/[^"'\s]+)?\?streamhls_ticket=1[^"'\s]*?target=([A-Za-z0-9+/=]+)[^"'\s]*)/g)];
   if(!tickets.length)throw new Error('no-037');
-  for(const tb64 of tickets){
+  for(const tm of tickets){
     try{
+      const tb64=tm[2];
       let apiHost='';
       try{apiHost=new URL(atob(tb64)).origin;}catch(e){continue;}
-      const thtml=await pGet('https://'+new URL(pageUrl).host+'/?streamhls_ticket=1&target='+tb64);
+      let turl=tm[1].replace(/&#038;/g,'&').replace(/&amp;/g,'&');
+      if(turl.startsWith('?'))turl='https://'+new URL(pageUrl).host+turl;
+      const thtml=await pGet(turl);
       const cfg=thtml.match(/embedId:\s*"([^"]+)"[\s\S]{0,600}?sessionUrl:\s*"([^"]+)"/);
       if(!cfg)continue;
       const sess=JSON.parse(await pGet(apiHost+cfg[2]));
