@@ -170,11 +170,13 @@ async function pPost(url,body,headers){
   }
 }
 function hostOf(url){try{return new URL(url).hostname.replace(/^www\./,'')}catch(e){return''}}
-function play(src){
+function play(src,ref){
   document.getElementById('yt').style.display='none';const v=document.getElementById('v');v.style.display='block';
   if(window._hls){try{window._hls.destroy()}catch(e){}window._hls=null}
   v.pause();v.removeAttribute('src');v.load();
-  if(src.includes('.m3u8')&&window.Hls&&Hls.isSupported()){const h=new Hls();window._hls=h;h.loadSource(src);h.attachMedia(v);v.play().catch(()=>{});}
+  if(src.includes('.m3u8')&&window.Hls&&Hls.isSupported()){const h=new Hls();window._hls=h;
+    h.loadSource('/api/hls?url='+encodeURIComponent(src)+(ref?('&ref='+encodeURIComponent(ref)):''));
+    h.attachMedia(v);v.play().catch(()=>{});}
   else{v.src=src;v.play().catch(()=>{});}
 }
 function playYT(id){document.getElementById('v').style.display='none';const f=document.getElementById('yt');f.style.display='block';f.src='https://www.youtube.com/embed/'+id+'?autoplay=1&rel=0';}
@@ -335,7 +337,8 @@ async function resolve(){
     else if(j.embed){playEmbed(j.embed);LAST_DIRECT=j.embed;
       document.getElementById('directbox').style.display='flex';
       document.getElementById('directurl').textContent=j.embed.slice(0,70)+'…';}
-    else{play(j.src);LAST_DIRECT=j.src;
+    else{let ref='';try{ref=new URL(j.src).origin}catch(e){}
+      play(j.src,ref);LAST_DIRECT=j.src;
       document.getElementById('directbox').style.display='flex';
       document.getElementById('directurl').textContent=j.src.slice(0,70)+'…';}
     if(!CUR.label||CUR.idx<0&&!EP.length)setNow(u(),-1);
