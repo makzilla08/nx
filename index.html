@@ -65,6 +65,19 @@ h3{margin:18px 0 4px}footer{font-size:12px;margin:24px 0;text-align:center;color
 </div>
 <div class="adetail" id="adetail"></div>
 <div class="bgrid" id="browse"></div>
+<h3>🇹🇭 เว็บซับไทย / พากย์ไทย</h3>
+<div class="tabs" id="sitetabs">
+<button data-s="hit-latest" class="on" onclick="siteBrowse('hit-latest',this)">🆕 hit อัพเดท</button>
+<button data-s="hit-sub" onclick="siteBrowse('hit-sub',this)">💬 hit ซับไทย</button>
+<button data-s="hit-dub" onclick="siteBrowse('hit-dub',this)">🔊 hit พากย์ไทย</button>
+<button data-s="hit-china" onclick="siteBrowse('hit-china',this)">🐉 hit จีน/เกาหลี</button>
+<button data-s="hit-movie" onclick="siteBrowse('hit-movie',this)">🎬 hit เดอะมูฟวี่</button>
+<button data-s="fairy-latest" onclick="siteBrowse('fairy-latest',this)">🧚 fairy อัพเดท</button>
+<button data-s="fairy-sub" onclick="siteBrowse('fairy-sub',this)">💬 fairy ซับไทย</button>
+<button data-s="fairy-dub" onclick="siteBrowse('fairy-dub',this)">🔊 fairy พากย์ไทย</button>
+<button data-s="fairy-top" onclick="siteBrowse('fairy-top',this)">🏆 fairy คะแนนท็อป</button>
+</div>
+<div class="bgrid" id="sitebrowse"></div>
 <div id="results" class="grid"></div>
 <h3 id="webhead" style="display:none">🌐 จากทั่วเน็ต</h3>
 <div id="webres" class="web"></div>
@@ -325,6 +338,21 @@ async function animeInfo(id,fallbackTitle){
   }catch(e){d.innerHTML='<p class="note">โหลดไม่ได้ — <button onclick="watchTitle(\''+String(fallbackTitle||'').replace(/'/g,"\\'")+'\')">🔍 หาที่ดูเลย</button></p>';}
 }
 function watchTitle(t){document.getElementById('q').value=t;search();document.getElementById('webhead').scrollIntoView();}
+async function siteBrowse(source,btn){
+  document.querySelectorAll('#sitetabs button').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  const g=document.getElementById('sitebrowse');g.innerHTML='<p class="note">⏳ กำลังโหลด...</p>';
+  try{
+    const r=await fetch('/api/sites?source='+source);if(!r.ok)throw new Error('server '+r.status);
+    const j=await r.json();g.innerHTML='';
+    (j.items||[]).forEach(m=>{
+      const d=document.createElement('div');d.className='bcard';
+      d.innerHTML='<img loading="lazy" src="'+m.cover+'"><div class="t">'+m.title+'</div><div class="s">'+(m.badge||m.src||'')+'</div>';
+      d.onclick=()=>expandWeb(m.url,m.title);g.appendChild(d);
+    });
+    if(!g.children.length)g.innerHTML='<p class="note">โหลดไม่ได้ ลองใหม่</p>';
+  }catch(e){g.innerHTML='<p class="note">โหลดไม่ได้: '+e.message.slice(0,80)+'</p>';}
+}
 async function searchHit(q){
   try{
     const html=await pGet(BASE+'/?s='+encodeURIComponent(q));
@@ -445,4 +473,5 @@ function renderEps(){
 document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
 document.getElementById('u').addEventListener('keydown',e=>{if(e.key==='Enter')resolve()});
 browse('trending');
+siteBrowse('hit-latest');
 </script></body></html>
