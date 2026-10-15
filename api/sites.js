@@ -16,6 +16,30 @@ function absUrl(href, base) {
   try { return new URL(href, base).href; } catch { return null; }
 }
 
+function decodeEnt(s) {
+  return s.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, n) => String.fromCharCode(parseInt(n, 16)))
+    .replace(/&(amp|lt|gt|quot|apos|nbsp);/g, (_, n) => ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }[n]));
+}
+
+async function fetchHtml(url) {
+  const tries = [url,
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+    'https://cors.eu.org/' + url];
+  let last = '';
+  for (const u of tries) {
+    try {
+      const ctl = new AbortController();
+      const to = setTimeout(() => ctl.abort(), 25000);
+      const r = await fetch(u, { signal: ctl.signal, redirect: 'follow', headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*', 'Accept-Language': 'th-TH,th;q=0.9,en;q=0.8' } });
+      clearTimeout(to);
+      if (!r.ok) { last = 'http ' + r.status; continue; }
+      return await r.text();
+    } catch (e) { last = String(e.message || e).slice(0, 60); }
+  }
+  throw new Error(last || 'fetch failed');
+}
+
 function parseHit(html, base) {
   const out = [], seen = new Set();
   for (const m of html.matchAll(/<article[\s\S]*?<\/article>/g)) {
@@ -30,7 +54,7 @@ function parseHit(html, base) {
       || (a.match(/<a[^>]*>([^<]{3,200})<\/a>/) || [])[1] || url;
     const img = (a.match(/data-src="([^"]+)"/) || a.match(/<img[^>]*src="([^"]+)"/) || [])[1] || '';
     if (/data:image\/svg/.test(img)) continue;
-    out.push({ url, title: title.replace(/&#0?39;/g, "'").trim(), cover: img.startsWith('//') ? 'https:' + img : img, src: 'hit-anime' });
+    out.push({ url, title: decodeEnt(title).replace(/&#0?39;/g, "'").trim(), cover: img.startsWith('//') ? 'https:' + img : img, src: 'hit-anime' });
   }
   return out;
 }
@@ -58,12 +82,7 @@ export default async function handler(req, res) {
   const pg = Math.max(1, +page || 1);
   const url = pg > 1 ? base.replace(/\/$/, '') + '/page/' + pg + '/' : base;
   try {
-    const ctl = new AbortController();
-    const to = setTimeout(() => ctl.abort(), 25000);
-    const r = await fetch(url, { signal: ctl.signal, redirect: 'follow', headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*', 'Accept-Language': 'th-TH,th;q=0.9,en;q=0.8' } });
-    clearTimeout(to);
-    if (!r.ok) return res.status(r.status).json({ error: 'upstream ' + r.status });
-    const html = await r.text();
+    const html = await fetchHtml(url);
     const items = source.startsWith('hit-') ? parseHit(html, base) : parseFairy(html, base);
     return res.status(200).json({ items });
   } catch (e) {
