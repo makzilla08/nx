@@ -368,7 +368,7 @@ async function searchWeb(q){
     w.innerHTML='';
     (j.results||[]).forEach(s=>webLink(s.url,s.title||s.url));
     if(!w.children.length)w.innerHTML='<p class="note">ไม่เจอผลเว็บ (เช็ก key)</p>';
-  }catch(e){w.innerHTML='<p class="note">ค้นเว็บล้มเหลว (เช็ก key/เน็ต)</p>';}
+  }catch(e){w.innerHTML='<p class="note">ค้นเว็บล้มเหลว: '+e.message.slice(0,120)+'</p>';}
 }
 async function loadEps(seriesUrl){
   const html=await pGet(seriesUrl),eps={};
